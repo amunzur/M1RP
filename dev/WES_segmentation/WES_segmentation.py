@@ -21,8 +21,7 @@ import sys
 color_dict = {0:'blue',1:'green',2:'purple',3:'red',4:'orange'}
 
 bin_size = 1000 ## Units: kb
-# sample = sys.argv[1]
-sample = 'M1RP_ID5_RP1'
+sample = sys.argv[1]
 if '.pdf' in sample:
 	sample = sample.split('.pdf')[0]
 
@@ -116,9 +115,6 @@ determined based on the number of bins per chromosome.
 # =============================================================================
 
 lrs = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Copy number analysis - All/Copy number plots (whole exome)/igv_tracks/'+sample+'_logratio.igv', sep = '\t').rename(columns = {sample:'log_ratio'})
-
-snps = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Copy number analysis - All/Copy number plots (whole exome)/igv_tracks/'+sample+'_hetz_snp.igv', sep = '\t').rename(columns = {sample:'hetz_snp'})
-
 tumor_frac = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
 
 # =============================================================================
@@ -128,24 +124,13 @@ tumor_frac = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9
 lrs = lrs.replace({'chrX':'chr23', 'chrY':'chr24'})
 lrs['CHROM'] = lrs['CHROM'].str.extract('(\d+)').astype(int)
 
-snps = snps.replace({'chrX':'chr23', 'chrY':'chr24'})
-snps['CHROM'] = snps['CHROM'].str.extract('(\d+)').astype(int)
-
 #change from bases to kb
 lrs['START'] = lrs['START'] / 1000
 lrs['END'] = lrs['END'] / 1000
-
-snps['START'] = snps['START'] / 1000
-snps['END'] = snps['END'] / 1000
-
-snps = snps[~snps['hetz_snp'].isin([0,1])]
-snps['hetz_snp'] = (snps['hetz_snp'] - 0.5).abs()
-
 # Add column for relative position
 
 lrs = normalize_chrom_positions(lrs)
 
-snps = snps.merge(lrs[['CHROM', 'CHR_LEN']].drop_duplicates(), on = 'CHROM', how = 'left')
 
 # =============================================================================
 # # Get mutation for TF check
@@ -163,9 +148,6 @@ tumor_frac['Rel_pos'] = tumor_frac['Position'] / lrs[lrs['CHROM'] == tumor_frac[
 # =============================================================================
 
 chr_dict = dict(zip(range(1,25), Parallel(n_jobs = 4)(delayed(chrom_to_bins)(lrs[lrs['CHROM'] == i].copy().reset_index(), bin_size, 'log_ratio', 'median_lr') for i in range(1,25))))
-
-chr_snp_dict = dict(zip(range(1,25), Parallel(n_jobs = 4)(delayed(chrom_to_bins)(snps[snps['CHROM']==i].copy().reset_index(), bin_size, 'hetz_snp', 'median_vaf') for i in range(1,25))))
-
 
 # =============================================================================
 # Segement bins by chromosome
@@ -195,9 +177,9 @@ for i in range(1,25):
 sizes = [12.75, 12.39, 10.13, 9.73, 9.27, 8.72, 8.14, 7.42, 7.08, 6.84, 6.87, 6.82, 4.89, 4.47, 4.17, 4.61, 4.25, 4.10, 2.99, 3.29, 1.93, 1.75, 7.97, 1]
 
 
-fig,axs = plt.subplots(ncols = len(sizes), nrows = 2, figsize = (15, 9), sharey = 'row', sharex = 'col', gridspec_kw = {'width_ratios':sizes})
+fig,axs = plt.subplots(ncols = len(sizes), nrows = 1, figsize = (15, 5), sharey = 'row', sharex = 'col', gridspec_kw = {'width_ratios':sizes})
 
-for i,ax in enumerate(axs[0]):
+for i,ax in enumerate(axs):
     chrom = chr_dict.get(i+1)
     clusters = cluster_dict.get(i+1)
     ax.scatter(chrom['mean_rel_pos'], chrom['median_lr'], s = 1, color = 'k', zorder = 100, marker = 'o')
@@ -216,18 +198,6 @@ for i,ax in enumerate(axs[0]):
         ax.tick_params(left = False)
     ax.set_ylim(-2,2)
     ax.set_yticks(np.arange(-2, 2.5, 0.5))
-    ax.grid(axis = 'y', lw = 0.5, color = '0.65', linestyle = 'dashed', zorder = 0)
-    
-for i, ax in enumerate(axs[1]):
-    chrom = chr_snp_dict.get(i+1)
-    ax.scatter(chrom['mean_rel_pos'], chrom['median_vaf'], s = 1, color = 'k', zorder = 100, marker = 'o')
-    c_str = str(i+1)
-    ax.set_xlabel(c_str)
-    ax.tick_params(bottom = False, labelbottom = False)
-    if i != 0:
-        ax.spines['left'].set_linestyle((0,(4,4)))
-        ax.tick_params(left = False)
-    ax.set_ylim(0,1)
     ax.grid(axis = 'y', lw = 0.5, color = '0.65', linestyle = 'dashed', zorder = 0)
     
 
