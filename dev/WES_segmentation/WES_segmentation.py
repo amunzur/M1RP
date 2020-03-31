@@ -12,16 +12,18 @@ import multiprocessing
 from joblib import Parallel, delayed
 import matplotlib.pyplot as plt
 import scipy.stats as stats
-
+import sys
 
 # =============================================================================
 # Constants
 # =============================================================================
 
-color_dict = {0:'blue',1:'yellow',2:'purple',3:'red',4:'green'}
+color_dict = {0:'blue',1:'green',2:'purple',3:'red',4:'orange'}
 
-bin_size = 1000
-sample = 'Ghent_ID5_RP1'
+bin_size = 1000 ## Units: kb
+sample = sys.argv[1]
+if '.pdf' in sample:
+	sample = sample.split('.pdf')[0]
 
 # =============================================================================
 # Helpers
@@ -67,27 +69,33 @@ def get_cluster_dataframe(chrom):
     median_lrs = chrom_gb.median()['median_lr']
     return pd.DataFrame({'start':starts,'end':ends,'median_lr':median_lrs});
 
+def update_clusters(chrom, clusters, cluster_num, break_pt):
+    chrom.loc[chrom['cluster'] > cluster_num, 'cluster'] = chrom['cluster'] + 1
+    chrom.loc[(chrom['cluster'] == cluster_num) & (chrom['mean_rel_pos'] > break_pt), 'cluster'] = chrom['cluster'] + 1
+    clusters = get_cluster_dataframe(chrom)
+    
+    return clusters, chrom    
 
 def check_clusters(chrom, clusters, min_samples):
-    for index, cluster in clusters.iterrows():
-        chrom = chrom[chrom['cluster'] == index].sort_values('mean_rel_pos')
-        chrom.index = np.arange(0,len(chrom),1)
+    for cluster_num, cluster in clusters.iterrows():
+        cluster_values = chrom[chrom['cluster'] == cluster_num].sort_values('mean_rel_pos')
+        cluster_values.index = np.arange(0,len(cluster_values),1)
         min_p = 2.
         break_pt = -1
         n = 0
-        for i in range(len(chrom)):
-            if i < 15 or len(chrom) - i < 15: continue
+        for i in range(len(cluster_values)):
+            if i < 25 or len(cluster_values) - i < 25: continue
             n += 1
-            group1 = chrom[chrom.index <= i]
-            group2 = chrom[chrom.index > i]
+            group1 = cluster_values[cluster_values.index <= i]
+            group2 = cluster_values[cluster_values.index > i]
             stat, p = stats.ttest_ind(group1['median_lr'], group2['median_lr'])
             if p < min_p:
                 min_p = p
                 break_pt = chrom.at[i, 'mean_rel_pos']
-        if n > 0 and min_p < 0.05 / (len(chrom) / n):
-            print(min_p, break_pt)
+        if n > 0 and min_p < 0.05 / (n):
+            # print(min_p, break_pt)
+            (clusters, chrom) = update_clusters(chrom, clusters, cluster_num, break_pt)
     return clusters
-        
         
 # =============================================================================
 # =============================================================================
@@ -107,6 +115,8 @@ determined based on the number of bins per chromosome.
 
 lrs = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Copy number analysis - All/Copy number plots (whole exome)/igv_tracks/'+sample+'_logratio.igv', sep = '\t').rename(columns = {sample:'log_ratio'})
 
+tumor_frac = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
+
 # =============================================================================
 # Change chromosomes to numeric data
 # =============================================================================
@@ -121,6 +131,17 @@ lrs['END'] = lrs['END'] / 1000
 # Add column for relative position
 
 lrs = normalize_chrom_positions(lrs)
+
+# =============================================================================
+# # Get mutation for TF check
+# =============================================================================
+tumor_frac = tumor_frac.replace({'chrX':'chr23', 'chrY':'chr24'})
+tumor_frac['Chromosome'] = tumor_frac['Chromosome'].fillna('0').str.extract('(\d+)').astype(int)
+
+tumor_frac = tumor_frac.loc[tumor_frac['Sample M1RP_ID'] == sample].squeeze()
+
+tumor_frac['Position'] = tumor_frac['Position'] / 1000
+tumor_frac['Rel_pos'] = tumor_frac['Position'] / lrs[lrs['CHROM'] == tumor_frac['Chromosome']]['CHR_LEN'].unique()[0]
 
 # =============================================================================
 # Create chromosome dictionary on binned chromosome
@@ -149,15 +170,6 @@ for i in range(1,25):
     cluster_dict[i] = df_clusters
 
 # =============================================================================
-# Check clusters
-# =============================================================================
-'''
-
-'''
-
-
-
-# =============================================================================
 # Plot the dots
 # =============================================================================
 
@@ -170,9 +182,14 @@ fig,axs = plt.subplots(ncols = len(sizes), figsize = (15, 5), sharey = True, gri
 for i,ax in enumerate(axs):
     chrom = chr_dict.get(i+1)
     clusters = cluster_dict.get(i+1)
-    ax.scatter(chrom['mean_rel_pos'], chrom['median_lr'], s = 1, color = 'k')
+    ax.scatter(chrom['mean_rel_pos'], chrom['median_lr'], s = 1, color = 'k', zorder = 100, marker = 'o')
     for index, row in clusters.iterrows():
-        ax.plot([row['start'],row['end']],[row['median_lr'],row['median_lr']], color = color_dict.get(index), linewidth = 1.4)
+        lw = 1.5
+        if i+1 == tumor_frac['Chromosome'] and row['start'] < tumor_frac['Rel_pos'] and row['end'] > tumor_frac['Rel_pos']:
+            lw = 2
+        ax.plot([row['start'],row['end']],[row['median_lr'],row['median_lr']], color = color_dict.get(index), linewidth = lw, zorder = 1000)
+    if i+1 == tumor_frac['Chromosome']:
+        ax.plot([tumor_frac['Rel_pos'], tumor_frac['Rel_pos']], [-2,2])
     c_str = str(i+1)
     ax.set_xlabel(c_str)
     ax.tick_params(bottom = False, labelbottom = False)
@@ -181,6 +198,9 @@ for i,ax in enumerate(axs):
         ax.tick_params(left = False)
     ax.set_ylim(-2,2)
     ax.set_yticks(np.arange(-2, 2.5, 0.5))
+    ax.grid(axis = 'y', lw = 0.5, color = '0.65', linestyle = 'dashed', zorder = 0)
 
 fig.tight_layout()    
 fig.subplots_adjust(wspace = 0)
+
+fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/Figures/WES_segmentation/'+sample+'.pdf')
