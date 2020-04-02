@@ -21,8 +21,8 @@ import sys
 color_dict = {0:'blue',1:'green',2:'purple',3:'red',4:'orange'}
 
 bin_size = 1000 ## Units: kb
-# sample = sys.argv[1]
-sample = 'M1RP_ID5_RP1'
+sample = sys.argv[1]
+# sample = 'M1RP_ID10_MB1.pdf'
 if '.pdf' in sample:
 	sample = sample.split('.pdf')[0]
 
@@ -234,4 +234,4 @@ for i, ax in enumerate(axs[1]):
 fig.tight_layout()    
 fig.subplots_adjust(wspace = 0)
 
-fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/Figures/WES_segmentation/'+sample+'.pdf')
+fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/Figures/WES_segmentation/'+sample+'_snps.pdf')
