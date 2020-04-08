@@ -69,7 +69,7 @@ cn = cn[cn['mut_TC'] > 0.2]
 
 # Noise
 avg_std = sample_noise['Sample_noise'].mean()
-cn['Adjusted_std'] = cn['lr_std'] * (cn['Sample_noise'] / avg_std)
+cn['Adjusted_std'] = cn['lr_std'] #* (cn['Sample_noise'] / avg_std)
 
 # =============================================================================
 # Add ploidy 
@@ -84,6 +84,22 @@ cn.loc[cn['CHROMOSOME'] == 'chrX', 'ploidy'] = 1
 
 cn['copies'] = cn['ploidy'] * (1 + (2**cn['log_ratio']-1)/cn['mut_TC'])
 
+# =============================================================================
+# Calculate z scores, pvalues
+# =============================================================================
+
+cn['z_score'] = cn.apply(lambda x: (x['log_ratio'] - x['lr_mean']) / x['Adjusted_std'], axis = 1)
+cn['p_val'] = cn['z_score'].apply(lambda z: stats.norm.cdf(z))
+
+
+
+
+
+
+
+
+
+'''
 # =============================================================================
 # Simulate copy number 100000 times
 # =============================================================================
@@ -105,3 +121,4 @@ print(time.time() - start_time)
 cn['z_total'] = cn['z_total']/n_sim
 
 cn['p_val'] = cn['z_total'].apply(lambda z: stats.norm.cdf(z))
+'''
