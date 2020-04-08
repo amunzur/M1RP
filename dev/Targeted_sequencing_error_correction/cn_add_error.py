@@ -61,7 +61,7 @@ cn = cn.merge(tumor_fraction[['mut_TC']], left_on = 'Sample',right_index = True,
 # Keep relevant samples
 # =============================================================================
 
-cn = cn[cn['mut_TC'] > 0.2]
+# cn = cn[cn['mut_TC'] > 0.2]
 
 # =============================================================================
 # Calulate adjusted noise
@@ -90,13 +90,6 @@ cn['copies'] = cn['ploidy'] * (1 + (2**cn['log_ratio']-1)/cn['mut_TC'])
 
 cn['z_score'] = cn.apply(lambda x: (x['log_ratio'] - x['lr_mean']) / x['Adjusted_std'], axis = 1)
 cn['p_val'] = cn['z_score'].apply(lambda z: stats.norm.cdf(z))
-
-
-
-
-
-
-
 
 
 '''
