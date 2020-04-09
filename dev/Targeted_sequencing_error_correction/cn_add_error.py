@@ -91,6 +91,7 @@ cn['copies'] = cn['ploidy'] * (1 + (2**cn['log_ratio']-1)/cn['mut_TC'])
 cn['z_score'] = cn.apply(lambda x: (x['log_ratio'] - x['lr_mean']) / x['Adjusted_std'], axis = 1)
 cn['p_val'] = cn['z_score'].apply(lambda z: stats.norm.cdf(z))
 
+cn.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/cn_melted_withError.tsv', sep = '\t', index = None)
 
 '''
 # =============================================================================
