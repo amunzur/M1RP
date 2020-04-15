@@ -14,8 +14,10 @@ from joblib import Parallel, delayed
 
 alpha = 0.001
 cn_neutral_color = '#ababab'
+biallelic_deletion_color = '#3F60AC'
 amplificaiton_color = '#EE2D24'
-deletion_color = '#3F60AC'
+deletion_color = '#9CC5E9'
+
 
 # =============================================================================
 # Helpers
@@ -51,9 +53,11 @@ cn = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correc
 # Add color column based on p-value and direction of change
 # =============================================================================
 
+
 cn['color'] = cn_neutral_color
 cn.loc[(cn['p_val'] <= alpha)&(cn['log_ratio'] >= cn['lr_mean']), 'color'] = amplificaiton_color
 cn.loc[(cn['p_val'] <= alpha)&(cn['log_ratio'] <= cn['lr_mean']), 'color'] = deletion_color
+cn.loc[cn['mut_TC'] <= cn['min_tc_2loss'], 'color'] = '#efefef'
 
 # =============================================================================
 # Split by sample and plot

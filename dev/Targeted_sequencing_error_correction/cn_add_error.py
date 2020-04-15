@@ -53,9 +53,9 @@ tumor_fraction['mut_TC'] = tumor_fraction['mut_TC'].str.split('%').str[0].astype
 # Merge sample noise and gene noise
 # =============================================================================
 
-cn = cn.merge(sample_noise, on = 'Sample', how = 'left')
+cn = cn.merge(sample_noise, on = 'Sample ID', how = 'left')
 cn = cn.merge(gene_noise, on = 'GENE', how = 'left')
-cn = cn.merge(tumor_fraction[['mut_TC']], left_on = 'Sample',right_index = True, how = 'left')
+cn = cn.merge(tumor_fraction[['mut_TC']], left_on = 'Sample ID',right_index = True, how = 'left')
 
 # =============================================================================
 # Keep relevant samples
@@ -89,7 +89,7 @@ cn['copies'] = cn['ploidy'] * (1 + (2**cn['log_ratio']-1)/cn['mut_TC'])
 # =============================================================================
 
 cn['z_score'] = cn.apply(lambda x: (x['log_ratio'] - x['lr_mean']) / x['Adjusted_std'], axis = 1)
-cn['p_val'] = cn['z_score'].apply(lambda z: stats.norm.cdf(z))
+cn['p_val'] = cn['z_score'].apply(lambda z: stats.norm.cdf(abs(z))*2)
 
 cn.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/cn_melted_withError.tsv', sep = '\t', index = None)
 
