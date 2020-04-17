@@ -46,7 +46,7 @@ tumor_fraction = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhD
 tumor_fraction.columns = tumor_fraction.iloc[0]
 tumor_fraction = tumor_fraction.drop(tumor_fraction.index[0])
 tumor_fraction = tumor_fraction.set_index('Sample ID')
-tumor_fraction['mut_TC'] = tumor_fraction['mut_TC'].str.split('%').str[0].astype(np.float64)
+tumor_fraction['mut_TC'] = tumor_fraction['mut_TC'].str.split('%').str[0].astype(np.float64) / 100
 
 
 # =============================================================================
@@ -89,7 +89,7 @@ cn['copies'] = cn['ploidy'] * (1 + (2**cn['log_ratio']-1)/cn['mut_TC'])
 # =============================================================================
 
 cn['z_score'] = cn.apply(lambda x: (x['log_ratio'] - x['lr_mean']) / x['Adjusted_std'], axis = 1)
-cn['p_val'] = cn['z_score'].apply(lambda z: stats.norm.cdf(abs(z))*2)
+cn['p_val'] = cn['z_score'].apply(lambda z: 1 - stats.norm.cdf(abs(z)))
 
 cn.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/cn_melted_withError.tsv', sep = '\t', index = None)
 

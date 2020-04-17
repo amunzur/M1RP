@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 """
 Created on Thu Apr  9 11:23:02 2020
 
@@ -57,7 +57,7 @@ cn = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correc
 cn['color'] = cn_neutral_color
 cn.loc[(cn['p_val'] <= alpha)&(cn['log_ratio'] >= cn['lr_mean']), 'color'] = amplificaiton_color
 cn.loc[(cn['p_val'] <= alpha)&(cn['log_ratio'] <= cn['lr_mean']), 'color'] = deletion_color
-cn.loc[cn['mut_TC'] <= cn['min_tc_2loss'], 'color'] = '#efefef'
+cn.loc[cn['mut_TC'] <= cn['min_tc_1loss'], 'color'] = '#efefef'
 
 # =============================================================================
 # Split by sample and plot

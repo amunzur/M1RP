@@ -74,7 +74,7 @@ ax1.legend(fontsize = 8)
 # Visualize the graph of theoretical cutoff of cancer cell fraction as std of the gene increases
 # =============================================================================
 
-min_p = 0.001 #1/1000 chance that the difference is due to noise
+min_p = 0.001 #1/100 chance that the difference is due to noise
 ploidy = 2
 std = 0.2
 
@@ -88,28 +88,28 @@ ccf_min = pd.DataFrame({'lr_mean':np.arange(-0.4,0.4, 0.0001)})
 # =============================================================================
 
 copy_change = -1
-ccf_min['Single copy loss'] = (2**(-1*stats.norm.ppf(1 - min_p / 2) * std + ccf_min['lr_mean']) - 1)/(((ploidy+copy_change)/ploidy) - 1)
+ccf_min['Single copy loss'] = (2**(-1*stats.norm.ppf(1 - min_p) * std + ccf_min['lr_mean']) - 1)/(((ploidy+copy_change)/ploidy) - 1)
 
 # =============================================================================
 # Single copy gain
 # =============================================================================
 
 copy_change = 1
-ccf_min['Single copy gain'] = (2**(1*stats.norm.ppf(1 - min_p / 2) * std + ccf_min['lr_mean']) - 1)/(((ploidy+copy_change)/ploidy) - 1)
+ccf_min['Single copy gain'] = (2**(1*stats.norm.ppf(1 - min_p) * std + ccf_min['lr_mean']) - 1)/(((ploidy+copy_change)/ploidy) - 1)
 
 # =============================================================================
 # Two copy loss
 # =============================================================================
 
 copy_change = -2
-ccf_min['Two copy loss'] = (2**(-1*stats.norm.ppf(1 - min_p / 2) * std + ccf_min['lr_mean']) - 1)/(((ploidy+copy_change)/ploidy) - 1)
+ccf_min['Two copy loss'] = (2**(-1*stats.norm.ppf(1 - min_p) * std + ccf_min['lr_mean']) - 1)/(((ploidy+copy_change)/ploidy) - 1)
 
 # =============================================================================
 # Two copy gain
 # =============================================================================
 
 copy_change = 2
-ccf_min['Two copy gain'] = (2**(1*stats.norm.ppf(1 - min_p / 2) * std + ccf_min['lr_mean']) - 1)/(((ploidy+copy_change)/ploidy) - 1)
+ccf_min['Two copy gain'] = (2**(1*stats.norm.ppf(1 - min_p) * std + ccf_min['lr_mean']) - 1)/(((ploidy+copy_change)/ploidy) - 1)
 
 # =============================================================================
 # Set up graph
@@ -128,4 +128,4 @@ ax2.set_ylim(0,1)
 
 fig.tight_layout()
 
-fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/std_lrMean_tf_lines.pdf')
+fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/std_lrMean_tf_lines (alpha=%f).pdf' % min_p)
