@@ -14,7 +14,6 @@ import numpy as np
 # =============================================================================
 
 genes = ['TP53','PTEN','RB1','BRCA2','AR','NCOA2','MYC','NKX3-1','CLU','CHD1','CDKN2A']
-alpha = 0.001
 
 colors = {
     4:'#EE2D24',
@@ -35,34 +34,17 @@ colors = {
 # lr < lr_mean. 3 if p_val is significant and TC > min_tc_1gain and 
 # lr > lr_mean. 4 if p_val is significant and TC < min_tc_1gain and 
 # lr > lr_mean. -1 if TC < min_tc_1loss and p is not significant
-def get_cn(cn, gene, sample, alpha):
+def get_cn(cn, gene, sample):
     print(gene, sample)
     row = cn.loc[(cn['GENE'] == gene)&(cn['Sample ID'] == sample)].reset_index().iloc[0]
-    pval = row['p_val']
-    if pval < alpha:
-        print(True)
-        if row['log_ratio'] > row['lr_mean']:
-            if row['mut_TC'] > row['min_tc_1gain']:
-                return 3;
-            else:
-                return 4;
-        else:
-            if row['mut_TC'] > row['min_tc_1loss']:
-                return 1;
-            else:
-                return 0
-    else:
-        if row['mut_TC'] < row['min_tc_1loss']:
-            return -1
-        else:
-            return 2;
+    return row['Adjusted_copy_num']
     
 
-def create_matrix(cn, genes, samples, alpha):
+def create_matrix(cn, genes, samples):
     matrix = pd.DataFrame(index = genes, columns = samples)
     for gene in genes:
         for sample in samples:
-            matrix.at[gene, sample] = get_cn(cn, gene, sample, alpha)
+            matrix.at[gene, sample] = get_cn(cn, gene, sample)
     return matrix;
 
 def visualize_matrix(matrix, patient):
@@ -122,5 +104,5 @@ cn = cn[cn['Sample ID'].isin(samples['Sample ID'].unique().tolist())]
 for patient in cn['Patient ID'].unique().tolist():
     tmp_cn = cn[cn['Patient ID'] == patient]
     pt_samples = samples[samples['Patient ID'] == patient]['Sample ID']
-    matrix = create_matrix(tmp_cn, genes, pt_samples, alpha)
+    matrix = create_matrix(tmp_cn, genes, pt_samples)
     visualize_matrix(matrix, patient)

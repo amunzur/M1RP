@@ -23,6 +23,7 @@ Calculate adjusted log_ratio, std, z_score, and p_value
 def noisy_tcs(tcs):
     return np.array(tcs.apply(lambda x: x * (2**np.random.normal(0,0.1)) + np.random.normal(0, 0.02)).clip(lower = 0.001, upper = 1))
 
+'''
 def calculate_z_scores(cn, copies_mean, copies_std, zipped_lr_adjusted_std):
     noisy_tc = noisy_tcs(cn['mut_TC'])
     noisy_lr = np.array(list(map(lambda x: np.random.normal(x[0], x[1]), zipped_lr_adjusted_std)))
@@ -32,7 +33,7 @@ def calculate_z_scores(cn, copies_mean, copies_std, zipped_lr_adjusted_std):
     z_scores = sim_df.apply(lambda x: (x[2]-x[0]) / x[1], axis = 1)
     print(time.time()-start_time)
     return z_scores
-
+'''
 
 # =============================================================================
 # Import data

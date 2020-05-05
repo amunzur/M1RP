@@ -46,17 +46,14 @@ def get_str(tc):
 def visualize_pval_dists(tc, lr_dists, p_value):
     fig,ax = plt.subplots(figsize = (5,3))
     
-    hist, bins = np.histogram(lr_dists[-1], bins=100)
-    logbins = np.logspace(np.log10(bins[0]),np.log10(bins[-1]),len(bins))
-    ax.hist(lr_dists[-1], bins = logbins, color = '#9CC5E9')
+    ax.hist(lr_dists[-1], bins = 500, color = '#9CC5E9')
+    ax.hist(lr_dists[-2], bins = 500, color = '#3F60AC')
     
-    hist, bins = np.histogram(lr_dists[-2], bins=bins)
-    logbins = np.logspace(np.log10(bins[0]),np.log10(bins[-1]),100)
-    ax.hist(lr_dists[-2], bins = logbins, color = '#3F60AC')
+    ax.text(x = 1, y = 750, s = 'Tumor content = %i' % (int(tc*100)), horizontalalignment = 'right')
     
-    ax.text(x = 0, y = 750, s = 'Tumor content = %i\np-value: %f' % (int(tc*100), p_value), horizontalalignment = 'left')
-    
+    ax.set_xscale('log')
     ax.set_ylim(0,800)
+    ax.set_xlim(right = 1)
         
     ax.set_ylabel('Frequency')
     ax.set_xlabel('Expected pvalue')
@@ -74,7 +71,6 @@ def simulate_tc_distributions(tc, ploidy, xbar, std):
         print(tc)
         pval_dists[copy_change] = Parallel(n_jobs = n_cores)(delayed(simulate_lr)(copy_change, tc, ploidy, xbar, std) for i in np.arange(0,10000,1))
     stat,p = stats.ttest_ind(pval_dists[-1], pval_dists[-2], equal_var = False)
-    print(p)
     p = round(p,3)
     visualize_pval_dists(tc, pval_dists, p)
     return;
