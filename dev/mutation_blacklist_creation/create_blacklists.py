@@ -94,8 +94,10 @@ for index, row in blacklist.iterrows():
             
 blacklist = blacklist[~blacklist['Sample ID'].str.contains('cfDNA')]
 
-blacklist.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/blacklists/%s_blacklist_full.tsv' % cohort, sep = '\t', header = None, index = None)
+blacklist = blacklist.reset_index()[['Patient ID','Sample ID', 'CHROM', 'POSITION', 'REF', 'ALT', 'GENE', 'EFFECT', 'Allele_frequency', 'Read_depth','NOTES', 'Called', 'Damage']]
 
-blacklist = blacklist.reset_index()[['CHROM','POSITION','REF','ALT']]
+blacklist.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/blacklists/%s_blacklist_full.tsv' % cohort, sep = '\t', index = None)
+
+blacklist = blacklist[['CHROM','POSITION','REF','ALT']]
 
 blacklist.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/blacklists/%s_blacklist_upload.tsv' % cohort, sep = '\t', header = None, index = None)
