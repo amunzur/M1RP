@@ -80,7 +80,7 @@ If the tumor content is < the min_tc required to reach the current alpha value,
 copy number is assigned -1.
 '''
 
-cn = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/cn_melted_withError.tsv', sep = '\t')
+cn = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/%s_cn_.tsv', sep = '\t')
 
 cn['Adjusted_copy_num'] = np.nan
 
@@ -94,4 +94,4 @@ for index, row in cn.iterrows():
     else:
         cn.at[index, 'Adjusted_copy_num'] = 2
         
-cn.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/cn_melted_withError.tsv', sep = '\t', index = None)
+cn.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/Targeted_sequencing_error_correction/%s_cn.tsv', sep = '\t', index = None)

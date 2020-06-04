@@ -18,7 +18,7 @@ bet = None
 if cohort == 'M1RP':
     bet = pd.read_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/betastasis/betastasis_noncoding.xlsx')
 elif cohort == 'M1B':
-    bet = pd.read_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/betastasis/betastasis_M1B_noncoding.xlsx')
+    bet = pd.read_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/betastasis/M1B_betastasis_all.xlsx')
 
 # =============================================================================
 # Melt betastasis

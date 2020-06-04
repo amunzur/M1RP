@@ -10,21 +10,21 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
 import math
-
+import sys
 
 # =============================================================================
 # Constants
 # =============================================================================
 
 min_reads = 100
-alpha = 0.001
+alpha = 0.005
 min_snps = 3
 min_loh = 4
 window_size = 25 # In each direction
 cna_lr_threshold = 0.3
 top_fraction = 0.75 # Take the top 75% of genes with allelic imbalance
 sig_gene_fraction = 0.5 # 1/2 of the snps in a gene must be significant to count it
-cohort = 'm1b'
+cohort = sys.argv[1]
 
 # =============================================================================
 # Helpers
@@ -50,13 +50,12 @@ def create_depth_std(gl, window_size):
     # ax.plot(np.arange(min_reads, 3000, 1), stds)
     return pd.DataFrame({'Read depth':np.arange(min_reads,3000,1),'std':stds, 'mean':means})
 
-
 # =============================================================================
 # Import SNPs
 # =============================================================================
 
 snp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/ghent_%s_hetz_snps.vcf' % cohort, sep = '\t')
-cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Ghent M1B Copy Number Plots/M1B_gene_cna.tsv', sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/M1RP Copy Number Analysis/Copy number analysis (targeted)/gene_cna.tsv', sep = '\t')
 
 # =============================================================================
 # Melt SNPS and create new columns. Keep only tissue samples
@@ -75,7 +74,6 @@ else:
     snp['Patient ID'] = snp['Sample ID'].str.split('-').str[0]+'_'+snp['Sample ID'].str.split('-').str[1]
     snp['Sample type'] = 'cfDNA'
     snp.loc[snp['Sample ID'].str.contains('WBC'), 'Sample type'] = 'gDNA'
-# snp = snp[snp['Sample type'] != 'cfDNA']
 
 # =============================================================================
 # Select only gDNA snps called
@@ -249,7 +247,7 @@ tc.columns = ['Sample ID','median LOH VAF','snp_TC','LOH gene count']
 # =============================================================================
 # Merge mut_TC calls onto snp_TC
 # =============================================================================
-if cohort in ['m1b','m1rp']:
+if cohort in ['M1B','M1RP']:
     mut_TC = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
     
     mut_TC.columns = mut_TC.iloc[0]
@@ -264,6 +262,8 @@ else:
     mut_TC = pd.read_csv('C:/Users/amurtha/Dropbox/2017 - Abi-enza second manuscript/Data freeze/ctdna_fractions.tsv', sep = '\t', header = None, names = ['Sample ID','mut_TC'])
     mut_TC['mut_TC'] = mut_TC['mut_TC'] / 100
 
+
+mut_TC['mut_TC'] = mut_TC['mut_TC'].fillna(0)
 tc = tc.merge(mut_TC, on = 'Sample ID')
 
 pos_tc = tc.copy()
@@ -282,9 +282,12 @@ tc['Copy neutral gene count'] = tc['Gene count'] - tc['LOH gene count']
 tc = tc[['Sample ID','Sample type','median LOH VAF','LOH gene count','Copy neutral gene count','snp_TC','mut_TC']]
 
 tc.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_tc_snp.tsv' % cohort, sep = '\t', index = None)
+tc.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/%s_tc_snp.tsv' % cohort, sep = '\t', index = None)
 
 snp = snp.sort_values(['Sample ID','Significant'], ascending = [True, False])
 snp.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_all_snp.tsv' % cohort, sep = '\t', index = None)
+snp.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/%s_all_snp.tsv' % cohort, sep = '\t', index = None)
+
 # =============================================================================
 # Plot mut_TC vs snp_TC
 # =============================================================================
