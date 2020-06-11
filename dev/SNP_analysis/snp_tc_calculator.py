@@ -17,14 +17,17 @@ import sys
 # =============================================================================
 
 min_reads = 100
-alpha = 0.005
-min_snps = 3
-min_loh = 4
+alpha = 0.001
+min_snps = 3 # Per gene
+min_loh = 3 # Per sample, regions of LOH
 window_size = 25 # In each direction
 cna_lr_threshold = 0.3
-top_fraction = 0.75 # Take the top 75% of genes with allelic imbalance
+top_fraction = 2/3 # Take the top X% of genes with allelic imbalance
 sig_gene_fraction = 0.5 # 1/2 of the snps in a gene must be significant to count it
-cohort = sys.argv[1]
+if len(sys.argv) > 1:
+    cohort = sys.argv[1]
+else:    
+    cohort = 'M1RP'
 
 # =============================================================================
 # Helpers
@@ -46,8 +49,6 @@ def create_depth_std(gl, window_size):
         tmp = gl[(gl['Read depth'] > i- window_size)&(gl['Read depth']<= i + window_size)]
         stds.append(tmp['VAF'].std())
         means.append(tmp['VAF'].mean())
-    # fig,ax = plt.subplots()
-    # ax.plot(np.arange(min_reads, 3000, 1), stds)
     return pd.DataFrame({'Read depth':np.arange(min_reads,3000,1),'std':stds, 'mean':means})
 
 # =============================================================================
@@ -80,17 +81,24 @@ else:
 # =============================================================================
 
 gl = snp.copy()
-gl = gl[gl['Sample type'].isin(['NL','gDNA'])]
+gl = gl[gl['Sample type'].isin(['NL','gDNA','WBC'])]
 gl = gl[gl['value'].str.contains('\*')]
 gl['Called'] = True
 
-snp = snp[~snp['Sample type'].isin(['gDNA'])]
+snp = snp[~snp['Sample type'].isin(['gDNA','WBC'])]
 
 # =============================================================================
 # Calcuate moving STD
 # =============================================================================
 
-snp = snp.merge(create_depth_std(gl, window_size), on = 'Read depth', how = 'left')
+depth_dists = create_depth_std(gl, window_size)
+snp = snp.merge(depth_dists, on = 'Read depth', how = 'left')
+
+fig,ax = plt.subplots()
+ax.scatter(gl['Read depth'],gl['VAF'],s = 5, color = 'k', alpha = 0.1, zorder = 0)
+ax.plot(depth_dists['Read depth'],depth_dists['std']+0.5, zorder = 100, lw = 2)
+
+ax.set_xlim(-0.5, 1000)
 
 # =============================================================================
 # Merge germline back onto snp dataframe
@@ -162,15 +170,15 @@ snp['Significant'] = False
 snp.loc[snp['combined p-val'] < alpha/(snp['SNP count']*snp['Gene count']), 'Significant'] = True
 
 # =============================================================================
-# Calculate number of significant SNPs per gene. Keep only genes that have >= min_snp
+# Calculate number of significant SNPs per gene. Keep only genes that have >= sig_gene_fraction
 # =============================================================================
 
 sig_counts_per_gene = snp.copy()
 sig_counts_per_gene = snp[['Sample ID','GENE','snp_significant']].groupby(['Sample ID','GENE']).count().reset_index()
-sig_counts_per_gene.columns = ['Sample ID','GENE','sig_count_gene']
+sig_counts_per_gene.columns = ['Sample ID','GENE','sig_snps_in_gene']
 
 snp = snp.merge(sig_counts_per_gene, on = ['Sample ID','GENE'])
-snp.loc[snp['sig_count_gene'] < sig_gene_fraction * snp['SNP count'].clip(lower = 2), 'Significant'] = False
+snp.loc[snp['sig_snps_in_gene'] < sig_gene_fraction * snp['SNP count'].clip(lower = 2), 'Significant'] = False
 
 # =============================================================================
 # Calculate number of regions of LOH
@@ -186,7 +194,7 @@ sig_counts_per_sample = sig_counts_per_sample[['Sample ID', 'GENE']]
 sig_counts_per_sample.columns = ['Sample ID', 'Num LOH']
 
 snp = snp.merge(sig_counts_per_sample, on = 'Sample ID', how = 'left')
-
+snp['Copy neutral gene count'] = snp['Gene count'] - snp['Num LOH']
 
 # =============================================================================
 # Merge chromosome back into dataframe
@@ -233,16 +241,16 @@ tc = tc[tc['num'] < top_fraction]
 # Calculate TC based on SNPs
 # =============================================================================
 
-tc = tc.groupby('Sample ID').mean()[['VAF', 'Gene count']]
+tc = tc.groupby('Sample ID').mean()[['VAF']]
 
 tc['snp_TC'] = 2 - (1 / tc['VAF'])
 tc = tc.reset_index()
 
-tc = snp[['Sample ID']].merge(tc, on = 'Sample ID', how = 'left')
+tc = snp[['Sample ID','Gene count','Copy neutral gene count','Num LOH']].merge(tc, on = 'Sample ID', how = 'left')
 tc['snp_TC'] = tc['snp_TC'].fillna(0)
-tc['Gene count'] = tc['Gene count'].fillna(0)
-tc = tc.drop_duplicates('Sample ID')[['Sample ID', 'VAF','snp_TC','Gene count']]
-tc.columns = ['Sample ID','median LOH VAF','snp_TC','LOH gene count']
+tc['Num LOH'] = tc['Num LOH'].fillna(0)
+tc = tc.drop_duplicates('Sample ID')[['Sample ID','VAF','snp_TC','Gene count','Num LOH','Copy neutral gene count']]
+tc.columns = ['Sample ID','median LOH VAF','snp_TC','Gene count','LOH gene count','Copy neutral gene count']
 
 # =============================================================================
 # Merge mut_TC calls onto snp_TC
@@ -253,6 +261,7 @@ if cohort in ['M1B','M1RP']:
     mut_TC.columns = mut_TC.iloc[0]
     mut_TC = mut_TC.drop(mut_TC.index[0])
     mut_TC['mut_TC'] = mut_TC['mut_TC'].str.split('%').str[0].astype(float) / 100
+    mut_TC = mut_TC[mut_TC['Cohort'] == cohort]
     mut_TC = mut_TC[['Sample ID','mut_TC']]
 elif cohort == 'lum':
     mut_TC = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/lm_tc.tsv', sep = '\t')
@@ -276,13 +285,15 @@ tc['order'] = 1
 if cohort != 'abienza':
     tc.loc[tc['Sample type'] == 'cfDNA', 'order'] = 2
 
-tc = tc.sort_values(['order','snp_TC','mut_TC','Sample ID'], ascending = True)
-tc = tc.merge(snp[['Sample ID','Gene count']].drop_duplicates(), on = ['Sample ID'], how = 'left')
 tc['Copy neutral gene count'] = tc['Gene count'] - tc['LOH gene count']
-tc = tc[['Sample ID','Sample type','median LOH VAF','LOH gene count','Copy neutral gene count','snp_TC','mut_TC']]
 
-tc.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_tc_snp.tsv' % cohort, sep = '\t', index = None)
-tc.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/%s_tc_snp.tsv' % cohort, sep = '\t', index = None)
+tc = tc[['Sample ID','Sample type','median LOH VAF','Gene count','LOH gene count','Copy neutral gene count','snp_TC','mut_TC']]
+
+tc_upload = mut_TC[['Sample ID']].merge(tc, on = 'Sample ID', how = 'left')
+
+
+tc_upload.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_tc_snp.tsv' % cohort, sep = '\t', index = None)
+tc_upload.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/%s_tc_snp.tsv' % cohort, sep = '\t', index = None)
 
 snp = snp.sort_values(['Sample ID','Significant'], ascending = [True, False])
 snp.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_all_snp.tsv' % cohort, sep = '\t', index = None)
@@ -318,3 +329,4 @@ print(stats.linregress(pos_tc['mut_TC'], pos_tc['snp_TC']))
 print(math.sqrt(pos_tc['residual'].apply(lambda x: x**2).sum() / len(pos_tc['residual'])))
 
 plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_mutsnpTC_scatter.pdf' % cohort)
+plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/%s_mutsnpTC_scatter.pdf' % cohort)

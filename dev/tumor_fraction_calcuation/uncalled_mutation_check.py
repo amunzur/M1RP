@@ -54,7 +54,7 @@ muts_uncalled = meltBet('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutation
 called = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/%s_mutations.tsv' % cohort, sep = '\t')
 mut_tc = pd.read_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_tumor_fraction_allMuts.xlsx' % cohort)
 cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/%s_cna_melted.tsv' % cohort, sep = '\t')
-exclude = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_exlusion.tsv' % cohort, sep = '\t')
+exclude = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_exclusion.tsv' % cohort, sep = '\t')
 
 
 # =============================================================================
@@ -186,6 +186,7 @@ mut_tc.to_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%
 # =============================================================================
 
 mut_tc = mut_tc[mut_tc['gDNA_flag'] == True]
+mut_tc = mut_tc[mut_tc['Manual_curationl'] != 0]
 mut_tc = mut_tc.drop_duplicates('Sample ID')
 
 mut_tc = mut_tc[['Cohort', 'Patient ID', 'Sample ID', 'mut_TC', 'CHROM', 'POSITION', 'GENE', 'EFFECT', 'Allele_frequency', 'Read_depth','Log_ratio']]

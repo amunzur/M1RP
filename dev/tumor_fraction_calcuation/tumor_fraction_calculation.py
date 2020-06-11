@@ -77,7 +77,7 @@ exclude = exclude[['Sample ID','GENE','POSITION','CHROM','REF','ALT','EFFECT', '
 
 exclude['Manual_curation'] = exclude['Manual_curation'].fillna(1)
 
-exclude.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_exlusion.tsv' % cohort, sep = '\t', index = None)
+exclude.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_exclusion.tsv' % cohort, sep = '\t', index = None)
 
 muts = muts.merge(exclude, on = ['Sample ID','GENE','POSITION','CHROM','REF','ALT','EFFECT'], how = 'left')
 

@@ -1,6 +1,6 @@
 
 
-set cohort=M1RP
+set cohort=M1B
 set min_reads=75
 set lr_max="0.3"
 
