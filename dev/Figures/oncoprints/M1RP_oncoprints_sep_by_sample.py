@@ -421,7 +421,7 @@ def ploting_oncoprint(tc_cna_table, mut_table, first_plot, tc_ax, onco_axis):
             else:
                 jitter = 0
             if 'nan' == cell: continue;
-            if 'no' == cell: continue;
+            if 'no' == cell: continue; xx
 
             if jitter > 0:
                 onco_axis.scatter(index+jitter, i+0.4+jitter, marker = 's', s = 100, color = cell1, zorder = 20, linewidth = 0.4)

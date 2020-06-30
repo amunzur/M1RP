@@ -16,10 +16,15 @@ import numpy as np
 
 missing_gDNA = {'M1B':['ID22','ID27','ID1','ID31', 'ID19','ID21'],
                 'M1RP':[]}
-cohort = sys.argv[1]
-min_reads = int(sys.argv[2])
-lr_max = float(sys.argv[3])
-cna_exclusion = ['FOXA1']
+if len(sys.argv) > 1:
+    cohort = sys.argv[1]
+    min_reads = int(sys.argv[2])
+    lr_max = float(sys.argv[3])
+else:
+    cohort = 'M1RP'
+    min_reads = 75
+    lr_max = 0.3
+cna_exclusion = []
 unique_mutation_columns = ['Patient ID','REF','ALT','GENE','EFFECT','CHROM','POSITION']
 
 # =============================================================================
@@ -51,11 +56,14 @@ def meltBet(path):
 # =============================================================================
     
 muts_uncalled = meltBet('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/betastasis/%s_betastasis_all.xlsx' % cohort)
-called = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/%s_mutations.tsv' % cohort, sep = '\t')
+called = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/final melted mutations/%s_mutations.tsv' % cohort, sep = '\t')
 mut_tc = pd.read_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_tumor_fraction_allMuts.xlsx' % cohort)
-cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/%s_cna_melted.tsv' % cohort, sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_FFPE_cna.tsv' % cohort, sep = '\t')
+cn_tmp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_cfdna_cna.tsv' % cohort, sep = '\t')
 exclude = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_exclusion.tsv' % cohort, sep = '\t')
 
+cn = cn.append(cn_tmp, ignore_index = True)
+del cn_tmp
 
 # =============================================================================
 # Get unique mutations
@@ -185,8 +193,8 @@ mut_tc.to_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%
 # Keep only top mutation per patient. All flags must be true
 # =============================================================================
 
-mut_tc = mut_tc[mut_tc['gDNA_flag'] == True]
-mut_tc = mut_tc[mut_tc['Manual_curationl'] != 0]
+mut_tc = mut_tc[mut_tc['gDNA_flag'] != False]
+mut_tc = mut_tc[mut_tc['Manual_curation'] != 0]
 mut_tc = mut_tc.drop_duplicates('Sample ID')
 
 mut_tc = mut_tc[['Cohort', 'Patient ID', 'Sample ID', 'mut_TC', 'CHROM', 'POSITION', 'GENE', 'EFFECT', 'Allele_frequency', 'Read_depth','Log_ratio']]

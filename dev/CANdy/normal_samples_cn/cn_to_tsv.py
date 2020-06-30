@@ -19,11 +19,21 @@ def meltCN(filepath):
     df = df[['Cohort','Patient ID','Sample ID', 'GENE', 'Copy_num', 'Log_ratio', 'CHROMOSOME', 'START', 'END']]
     return df;
 
-m1b = meltCN('C:/Users/amurtha/Dropbox/Ghent M1 2019/M1B Copy Number Analysis/Targeted (Ghent normals)/ghentm1b_gene_cna.tsv')
-m1rp = meltCN('C:/Users/amurtha/Dropbox/Ghent M1 2019/M1RP Copy Number Analysis/Copy number analysis (targeted, using Ghent normals)/gene_cna.ffpe.tsv')
+m1b = meltCN('C:/Users/amurtha/Dropbox/Ghent M1 2019/M1B Copy Number Analysis/M1B_gene_cna.ffpe.tsv')
+m1rp = meltCN('C:/Users/amurtha/Dropbox/Ghent M1 2019/M1RP Copy Number Analysis/m1rp_gene_cna.ffpe.tsv')
 
 m1rp = m1rp[~m1rp['Sample ID'].str.contains('cfDNA')]
 m1b = m1b[~m1b['Sample ID'].str.contains('cfDNA')]
 
-m1rp.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/M1RP_FFPE_cna.tsv', sep = '\t', index = None)
-m1b.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/M1B_FFPE_cna.tsv', sep = '\t', index = None)
+m1rp.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/M1RP_FFPE_cna.tsv', sep = '\t', index = None)
+m1b.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/M1B_FFPE_cna.tsv', sep = '\t', index = None)
+
+m1b = meltCN('C:/Users/amurtha/Dropbox/Ghent M1 2019/M1B Copy Number Analysis/M1B_gene_cna.cfdna.tsv')
+m1rp = meltCN('C:/Users/amurtha/Dropbox/Ghent M1 2019/M1RP Copy Number Analysis/m1rp_gene_cna.cfdna.tsv')
+
+m1rp = m1rp[m1rp['Sample ID'].str.contains('cfDNA')]
+m1b = m1b[m1b['Sample ID'].str.contains('cfDNA')]
+
+m1rp.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/M1RP_cfdna_cna.tsv', sep = '\t', index = None)
+m1b.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/M1B_cfdna_cna.tsv', sep = '\t', index = None)
+

@@ -33,21 +33,21 @@ def noisy_tcs(tcs):
 # Import data
 # =============================================================================
 
-cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/%s_FFPE_cna.tsv' % cohort, sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_FFPE_cna.tsv' % cohort, sep = '\t')
 gene_noise = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/normal_samples_cn/normal_samples_cn.tsv', sep = '\t')
 tumor_fraction = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
 
 tumor_fraction.columns = tumor_fraction.iloc[0]
 tumor_fraction = tumor_fraction.drop(tumor_fraction.index[0])
 tumor_fraction = tumor_fraction.set_index('Sample ID')
-tumor_fraction['mut_TC'] = tumor_fraction['mut_TC'].str.split('%').str[0].astype(np.float64) / 100
+tumor_fraction['Final tNGS_TC'] = tumor_fraction['Final tNGS_TC'].str.split('%').str[0].astype(np.float64) / 100
 
 # =============================================================================
 # Merge sample noise and gene noise
 # =============================================================================
 
 cn = cn.merge(gene_noise, on = 'GENE', how = 'left')
-cn = cn.merge(tumor_fraction[['mut_TC']], left_on = 'Sample ID',right_index = True, how = 'left')
+cn = cn.merge(tumor_fraction[['Final tNGS_TC']], left_on = 'Sample ID',right_index = True, how = 'left')
 
 # =============================================================================
 # Add ploidy 
@@ -60,7 +60,7 @@ cn.loc[cn['CHROMOSOME'] == 'chrX', 'ploidy'] = 1
 # Calculate Copies
 # =============================================================================
 
-cn['copies'] = cn['ploidy'] * (1 + (2**(cn['Log_ratio']-cn['lr_mean'])-1)/cn['mut_TC'])
+cn['copies'] = cn['ploidy'] * (1 + (2**(cn['Log_ratio']-cn['lr_mean'])-1)/cn['Final tNGS_TC'])
 
 # =============================================================================
 # Calculate z scores, pvalues

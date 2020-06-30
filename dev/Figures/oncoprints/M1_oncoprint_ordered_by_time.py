@@ -22,7 +22,7 @@ all_target_genes = True     #Mark false if only want genes with mutations,not al
 
 #TODO: Filter out failed samples for M1B when more samples arrive
 #TODO: Make option for font adjustment
-#TODO: Could add bars over the top under ct_est plot to group samples
+#TODO: Could add bars over the top under ct_est plot to group samples?
 
 
 # =============================================================================

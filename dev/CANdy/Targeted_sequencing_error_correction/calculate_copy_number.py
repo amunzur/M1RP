@@ -34,7 +34,7 @@ def get_noise_tc(tc):
     return max(0, min(0.99999,tc * (2**np.random.normal(0,0.1)) + np.random.normal(0,0.02)))
     
 def get_p_dist(row, cn_change):
-    adj_tc = get_noise_tc(row['mut_TC'])
+    adj_tc = get_noise_tc(row['Final tNGS_TC'])
     ploidy = row['ploidy']
     cn = ploidy + cn_change
     sim_lr = math.log2(1 + adj_tc*(cn/ploidy - 1)) + row['lr_mean']
@@ -92,7 +92,7 @@ cn['Adjusted_copy_num'] = np.nan
 for index, row in cn.iterrows():
     if row['p_val'] < alpha:
         cn.at[index, 'Adjusted_copy_num'] = get_copy_number(row)
-    elif row['mut_TC'] < row['min_tc_1loss']:
+    elif row['Final tNGS_TC'] < row['min_tc_1loss']:
         cn.at[index, 'Adjusted_copy_num'] = -1
     else:
         cn.at[index, 'Adjusted_copy_num'] = 2

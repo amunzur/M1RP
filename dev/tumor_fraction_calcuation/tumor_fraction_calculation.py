@@ -11,18 +11,26 @@ import sys
 
 missing_gDNA = {'M1B':['ID22','ID27','ID1','ID31', 'ID19','ID21'],
                 'M1RP':[]}
-cohort = sys.argv[1]
-min_reads = int(sys.argv[2])
-lr_max = float(sys.argv[3])
-cna_exclusion = ['FOXA1']
+
+if len(sys.argv) > 1:
+    cohort = sys.argv[1]
+    min_reads = int(sys.argv[2])
+    lr_max = float(sys.argv[3])
+else:
+    cohort = 'M1RP'
+    min_reads = 75
+    lr_max = 0.3
+    
+cna_exclusion = []
 
 # =============================================================================
 # Import data
 # =============================================================================
 
-muts = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/%s_mutations.tsv' % cohort, sep = '\t')
+muts = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/final melted mutations/%s_mutations.tsv' % cohort, sep = '\t')
 tumor_fraction = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
-cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/%s_cna_melted.tsv' % cohort, sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_FFPE_cna.tsv' % cohort, sep = '\t')
+cn_tmp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_cfDNA_cna.tsv' % cohort, sep = '\t')
 exclude = pd.read_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_tumor_fraction_allMuts.xlsx' % cohort)
 
 tumor_fraction.columns = tumor_fraction.iloc[0]
@@ -31,6 +39,9 @@ tumor_fraction['mut_TC'].str.split('%').str[0].astype(np.float64) / 100
 muts['Cohort'] = cohort
 
 tumor_fraction = tumor_fraction[tumor_fraction['Cohort'] == cohort]
+
+cn = cn.append(cn_tmp, ignore_index = True)
+del cn_tmp
 
 # =============================================================================
 # Merge log_ratio onto mutations

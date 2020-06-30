@@ -17,9 +17,9 @@ import scipy.stats as stats
 
 neg_samples = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=1034049737')
 
-cn_M1B = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/M1B_FFPE_cna.tsv', sep = '\t')
+cn_M1B = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/M1B_FFPE_cna.tsv', sep = '\t')
 
-cn_M1RP = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/M1RP_FFPE_cna.tsv', sep = '\t')
+cn_M1RP = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/M1RP_FFPE_cna.tsv', sep = '\t')
 
 # =============================================================================
 # Append copy number
