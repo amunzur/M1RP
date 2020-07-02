@@ -1,11 +1,11 @@
 """
 Created on Wed Jun 18 20:00:28 2020
 
-M1 project oncorpint, separated by sample, mark unable to call mutation and cnv
+M1 project oncorpint, separated by sample, include unable to call mutation
 
 @author: echen
 """
-
+#TODO: figure out how to add dahsed line on squares
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -56,13 +56,18 @@ mutation_color_dict = {
     'nan':'nan'
 }
 
+
 # 3. Figure size
 width = 10
-height = 20
+height = 16
 
 # III. Data
 cohort = 'M1RP'
-patientID = 'ID8'
+patientID = 'ID22'
+single_loss_threshold = 37.5
+double_loss_threshold = 19.5
+single_gain_threshold = 46
+amplification_threshold = 23.5
 genes = []
 gene_order = []
 num_genes = 73
@@ -83,11 +88,13 @@ Helper functions
 # Helper for scatter plots
 def plot_scatter(ax, markstyle, ul, lr, cell):
     if 'unable' in cell:
-        cellcol = 'none'
-        if markstyle=='^':
-            edgecol = 'black'
-        else:
-            edgecol = cell.split("_")[1]
+        cellcol = '#FFFFFF'
+        edgecol = 'k'
+    elif 'non-independent' in cell:
+        cellcol = cell.split("_")[1]
+        print(cell)
+        ax.scatter(ul, lr, marker = 'o', s = 35, color = cellcol, edgecolors = 'none', zorder = 20, linewidth = 0.4) 
+        return
     else:
         cellcol = cell
         edgecol = 'none'
@@ -105,13 +112,18 @@ def ploting_oncoprint(tc_cna_table, mut_table, first_plot, tc_ax, onco_axis):
         tc_ax.yaxis.set_ticks_position('none')
         tc_ax.spines['left'].set_visible(False)
     
-    tc_ax.bar(tc_cna_table['Sample ID'], tc_cna_table['Final tNGS_TC'], zorder = 10, color = 'k')
+    tc_ax.bar(tc_cna_table['Sample ID'], tc_cna_table['Final tNGS_TC'], zorder = 10, color = '#909396')
     tc_ax.set_ylim(0,100)
     tc_ax.tick_params(bottom = False, labelbottom = False)
     tc_ax.spines['bottom'].set_zorder(100)
     tc_ax.spines['top'].set_visible(False)
     tc_ax.spines['right'].set_visible(False)
-    tc_ax.grid(axis = 'y', linestyle = 'dashed', linewidth = 0.5, color = '0.7', zorder = 0)
+#     tc_ax.grid(axis = 'y', linestyle = 'dashed', linewidth = 0.5, color = '0.7', zorder = 0)
+    if len(tc_cna_table)>0 or first_plot:
+        tc_ax.axhline(y=single_loss_threshold,xmin=0,xmax=1,c="#9CC5E9",linewidth=1,zorder=20)
+        tc_ax.axhline(y=double_loss_threshold,xmin=0,xmax=1,c="#3F60AC",linewidth=1,zorder=20)
+        tc_ax.axhline(y=single_gain_threshold,xmin=0,xmax=1,c="#F59496",linewidth=1,zorder=20)
+        tc_ax.axhline(y=amplification_threshold,xmin=0,xmax=1,c="#EE2D24",linewidth=1,zorder=20)
 
     for index, row in tc_cna_table.iterrows():
         for i, col in enumerate(tc_cna_table.columns.tolist()[1:num_genes]):
@@ -172,10 +184,8 @@ Reorganizing individual source table
 """
 # I. Target genes 
 # Get all genes from cfDNA_cna table and sort by chrom and start pos in ascending order
-genes = genes[['GENE','CHROMOSOME','START']]
-genes = genes.drop_duplicates(['GENE'],keep='first')
-# genes = genes.sort_values(by=['CHROMOSOME','START'],ascending=[True,True])
 genes = genes[['GENE']]
+genes = genes.drop_duplicates(['GENE'],keep='first')
 genes = genes.reset_index(drop=True)
 gene_order = genes['GENE'].tolist()
 
@@ -264,10 +274,11 @@ betastasis = betastasis.reset_index(drop=True)
 for index,row in betastasis.iterrows():
     for col in betastasis.columns.tolist()[6:]:
         cell = str(betastasis.at[index,col])
+        vaf = ":" + cell.split("%")[0]
         if "*" not in cell:
-            betastasis.at[index,col] = cell[cell.find("(")+1:cell.find(")")]
+            betastasis.at[index,col] = cell[cell.find("(")+1:cell.find(")")] + vaf
         else:
-            betastasis.at[index,col] = cell[cell.find("(")+1:cell.find(")")] + "*"
+            betastasis.at[index,col] = cell[cell.find("(")+1:cell.find(")")] + vaf + "*"
 
 
 """
@@ -275,7 +286,7 @@ Merging date, tc, cna, mutation
 """
 # I. Merging date to tumor content --> tc_cohort_merge
 # If cfDNA sample, date is from Sample ID
-# TODO: MLN, MB, NL don't have date info
+# TODO: MLN, NL don't have date info
 tc_cohort_merge = tc_cohort.merge(date_all, how='left', on=['Patient ID', 'Sample Type'])
 tc_cohort_merge = tc_cohort_merge.drop('ID ',axis = 1)
 for index,row in tc_cohort_merge.iterrows():
@@ -377,10 +388,19 @@ for gene_eff_pos in patient_called_mutations:
             print('more than one records')
         else:
             tc_sample = float(tc_dict[sample]) * 0.01
-            read_depth = float(query_df.at[0, sample].split("*")[0])
+            read_depth = float(query_df.at[0, sample].split(":")[0])
+            vaf = float(query_df.at[0, sample].split(":")[1].split("*")[0]) * 0.01
+            mutant_read = read_depth * vaf
             eligible_read = read_depth * tc_sample
-            if (read_depth < 100 and tc_sample < 0.08) or (read_depth >= 100 and eligible_read < 8):
-                cell = one_patient_mutations.at[sample,gene]
+            cell = one_patient_mutations.at[sample,gene]
+            if "*" not in query_df.at[0,sample] and vaf >= 0.01 and mutant_read >= 3:
+                if cell == 'nan':
+                    one_patient_mutations.at[sample,gene] = 'non-independent_' + effect
+                    print(sample+":"+gene+":"+effect+" "+str(vaf)+" "+str(mutant_read))
+                else:
+                    one_patient_mutations.at[sample,gene] = cell + ":non-independent_" + effect
+                    print(sample+":"+gene+":"+effect+" "+str(vaf)+" "+str(mutant_read))
+            elif (tc_sample > 0) and ((read_depth < 100 and tc_sample < 0.08) or (read_depth >= 100 and eligible_read < 8)):
                 if cell == 'nan':
                     one_patient_mutations.at[sample,gene] = 'unable_' + effect
                 else:
@@ -395,10 +415,14 @@ for index,row in one_patient_mutations.iterrows():
             for mut in cell.split(":"):
                 if 'unable' in mut:
                     color = color + ":" + 'unable_' + mutation_color_dict[mut.split("_")[1]]
+                elif 'non-independent' in mut:
+                    color = color + ":" + 'non-independent_' + mutation_color_dict[mut.split("_")[1]]
                 else:
                     color = color + ":" + mutation_color_dict[mut]
         elif 'unable' in cell:
             color = 'unable_' + mutation_color_dict[cell.split("_")[1]]
+        elif 'non-independent' in cell:
+            color = 'non-independent_' + mutation_color_dict[cell.split("_")[1]]
         else:
             color = mutation_color_dict[cell]
         one_patient_mutations.at[index,col] = color
@@ -472,7 +496,7 @@ Ploting oncoprints
 # I. Establishing basic structure
 fig = plt.figure(figsize = (width,height))
 gs = gridspec.GridSpec(ncols = 6, nrows = 2, height_ratios = [2.5,15], width_ratios = [pb_count,rp_count,mln_count,mb_count,cfdna_count, 6.5])
-gs.update(hspace = 0.07, wspace = 0.04, right = 0.97, top = 0.97, bottom = 0.25, left = 0.17)
+gs.update(hspace = 0.07, wspace = 0, right = 0.97, top = 0.97, bottom = 0.25, left = 0.17)
 
 axpb = fig.add_subplot(gs[0,0])
 axrp = fig.add_subplot(gs[0,1])
@@ -480,11 +504,11 @@ axmln = fig.add_subplot(gs[0,2])
 axmb = fig.add_subplot(gs[0,3])
 axcfdna = fig.add_subplot(gs[0,4])
 
-axpb1 = fig.add_subplot(gs[1,0])
-axrp1 = fig.add_subplot(gs[1,1])
-axmln1 = fig.add_subplot(gs[1,2])
-axmb1 = fig.add_subplot(gs[1,3])
-axcfdna1 = fig.add_subplot(gs[1,4])
+axpb1 = fig.add_subplot(gs[1,0],sharex=axpb)
+axrp1 = fig.add_subplot(gs[1,1], sharex=axrp)
+axmln1 = fig.add_subplot(gs[1,2],sharex=axmln)
+axmb1 = fig.add_subplot(gs[1,3], sharex=axmb)
+axcfdna1 = fig.add_subplot(gs[1,4], sharex=axcfdna)
 
 # II. Ploting PB, RP, MLN, MB, cfDNA
 ploting_oncoprint(pb_one_patient_tc_cna, pb_one_patient_mutations, first_plot=True, tc_ax=axpb, onco_axis=axpb1)
@@ -494,18 +518,34 @@ ploting_oncoprint(mb_one_patient_tc_cna, mb_one_patient_mutations, first_plot=Fa
 ploting_oncoprint(cfdna_one_patient_tc_cna, cfdna_one_patient_mutations,first_plot=False, tc_ax=axcfdna, onco_axis=axcfdna1)
 
 ax5 = fig.add_subplot(gs[1,5])
-labels = ['Amplification','Gain', 'Deletion', 'Deep deletion','Non-frameshift indel','Missense', 'Truncation', 'Silent','>2 mutations']
-handles = [Patch(color = '#EE2D24', linewidth = 0), Patch(color = '#F59496', linewidth = 0),
-           Patch(color = '#9CC5E9', linewidth = 0), Patch(color = '#3F60AC', linewidth = 0),
-           Patch(color = '#a9a9a9', linewidth = 0), Patch(color = '#79B443', linewidth = 0),
-           Patch(color = '#FFC907', linewidth = 0), Patch(color = '#605857', linewidth = 0),
-           mlines.Line2D([], [], color='black', markeredgecolor='k', marker='^', lw=0, markersize=8)]
-ax5.legend(handles, labels, loc = 'center left', handlelength = 0.8, frameon = False,fontsize=legend_font_size)
+onco_labels = ['Amplification','Gain', 'Deletion', 'Deep deletion', 'Unable to call CNV', 'Non-frameshift indel','Missense', 'Truncation', 'Silent','>2 mutations', 'Non-independent call', 'Insufficient']
+onco_handles = [Patch(color = '#EE2D24', linewidth = 0), Patch(color = '#F59496', linewidth = 0),
+               Patch(color = '#9CC5E9', linewidth = 0), Patch(color = '#3F60AC', linewidth = 0),
+               mlines.Line2D([], [], color='none', markeredgecolor='#E6E7E8', marker='s', lw=0, markersize=8),
+               Patch(color = '#a9a9a9', linewidth = 0), Patch(color = '#79B443', linewidth = 0),
+               Patch(color = '#FFC907', linewidth = 0), Patch(color = '#605857', linewidth = 0),
+               mlines.Line2D([], [], color='black', markeredgecolor='k', marker='^', lw=0, markersize=8),
+               mlines.Line2D([], [], color='black', markeredgecolor='k', marker='o', lw=0, markersize=8),
+               mlines.Line2D([], [], color='none', markeredgecolor='k', marker='s', lw=0, markersize=8)]
+ax5.legend(onco_handles, onco_labels, loc = 'center left', handlelength = 0.8, frameon = False,fontsize=legend_font_size)
 ax5.spines['bottom'].set_visible(False)
 ax5.spines['left'].set_visible(False)
 ax5.spines['top'].set_visible(False)
 ax5.spines['right'].set_visible(False)
 ax5.tick_params(left = False, bottom = False, labelleft = False, labelbottom = False)
 
+ax6 = fig.add_subplot(gs[0,5])
+labels = ['Gain', 'Deletion','Amplification', 'Deep deletion']
+handles = [mlines.Line2D([], [], color='#F59496', marker='_', lw=0, markersize=8),
+           mlines.Line2D([], [], color='#9CC5E9', marker='_', lw=0, markersize=8),
+           mlines.Line2D([], [], color='#EE2D24', marker='_', lw=0, markersize=8),
+           mlines.Line2D([], [], color='#3F60AC', marker='_', lw=0, markersize=8)]
+ax6.legend(handles, labels, loc = 'center left', title='Detection threshold',handlelength = 0.8, frameon = False,fontsize=legend_font_size)
+ax6.spines['bottom'].set_visible(False)
+ax6.spines['left'].set_visible(False)
+ax6.spines['top'].set_visible(False)
+ax6.spines['right'].set_visible(False)
+ax6.tick_params(left = False, bottom = False, labelleft = False, labelbottom = False)
+
 filename = 'new_sep_' + cohort + '_' + patientID + '.pdf'
-fig.savefig(filename)
+fig.savefig(filename,bbox_extra_artists=(ax5,), bbox_inches='tight')
