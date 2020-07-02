@@ -26,8 +26,8 @@ if len(sys.argv) > 1:
     alpha = sys.argv[1]
     limit_tf = sys.argv[2]
 else:
-    alpha = '0.001'
-    limit_tf = 'All'
+    alpha = '0.01'
+    limit_tf = 'High'
 
 nas = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/abi_enza/Targeted_sequencing_error_correction/CANdy_Abienza_ctDNA_cna.tsv', sep = '\t')
 
