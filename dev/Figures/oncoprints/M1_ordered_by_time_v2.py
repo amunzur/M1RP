@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jun 13 22:11:12 2020
-
 @author: sng
 """
 
@@ -13,10 +12,11 @@ import matplotlib.gridspec as gridspec
 import matplotlib.lines as mlines
 from datetime import datetime as dt
 import natsort as ns
+import re
 
 
 cohort = 'M1RP'
-patientID = 'ID32'
+patientID = 'ID8'
 
 all_target_genes = True    #Mark false if only want genes with mutations,not all target genes
 
@@ -111,7 +111,7 @@ for row in mut.itertuples(index = False):
         if temp_gene:
            gene = temp_gene.pop() 
     if gene in genes:
-        mutations.loc[sample, gene] = mutations.loc[sample, gene] + mut_type + ' '
+        mutations.loc[sample, gene] = mutations.loc[sample, gene] + mut_type + '|'
     
 
 #Add copy number data to mutations dataframe
@@ -119,12 +119,34 @@ for row in cn_cfdna.itertuples(index = False):
     sample = row[2]
     gene = row[3]
     copy_num = row[4]
-    mutations.loc[sample, gene] = mutations.loc[sample, gene] + copy_num + ' '
+    mutations.loc[sample, gene] = mutations.loc[sample, gene] + copy_num + 'cn '
 for row in cn_ffpe.itertuples(index = False):
     sample = row[2]
     gene = row[3]
     copy_num = row[4]
-    mutations.loc[sample, gene] = mutations.loc[sample, gene] + copy_num + ' '
+    mutations.loc[sample, gene] = mutations.loc[sample, gene] + copy_num + 'cn '
+
+
+samples = mutations['Sample ID']
+tc_est = tc_est.set_index('Sample ID', drop=False)
+tc_est = tc_est.reindex(samples)
+
+for sample in samples:
+    tc = tc_est.loc[sample]['Final tNGS_TC']
+    for i, col in enumerate(genes):        
+        read_counts = beta.loc[beta['GENE'] == col]
+        for index2, row2 in read_counts.iterrows():
+            has_muts = False
+            for x in row2:
+                if "*" in x:
+                    has_muts = True
+            if has_muts and not read_counts.empty and '*' not in row2[sample]:
+                total_reads = float(re.search(r'\((.*?)\)', row2[sample]).group(1))
+                vaf = float(row2[sample].split('%')[0])/100
+                if vaf >= 0.01 and vaf*total_reads >= 3:
+                    mutations.loc[sample, col] = mutations.loc[sample, col] + 'dep_' + row2['EFFECT'] + '|'
+                elif total_reads*tc/100 < 8:    
+                    mutations.loc[sample, col] = mutations.loc[sample, col] + 'uncallable|'
 
 
 #Reorder samples by time
@@ -156,7 +178,6 @@ mutations = mutations.sort_values(by = ['Date', 'Sample ID'])
 # =============================================================================
 # Set up oncoprint
 # =============================================================================
-samples = mutations['Sample ID']
 mut_dot_size = 35                #Size of mutations squares - adjust if needed
 fig_width = 0.3*len(samples)     #Width of plot - adjust constant if needed
 fig_height = 0.3*len(genes)      #Height of plot - adjust constants if needed
@@ -245,22 +266,15 @@ for index, row in mutations.iterrows():
 for index, row in mutations.iterrows():
     for i, col in enumerate(genes):
         tc = tc_est.loc[row["Sample ID"]]['Final tNGS_TC']
-        reads = beta.loc[beta['GENE'] == col, row["Sample ID"]].tolist()
-        if reads:
-            reads = [x[x.find("(")+1:x.find(")")] for x in reads]
-            reads = float(min(reads))*tc/100
-            if reads < 8:
-                ax2.scatter(row.name, i+0.4, marker = 's', s = mut_dot_size, color = '#FFFFFF', zorder = 35, edgecolors = 'none', linewidth = 0)
         if mutations.at[index, col] != '':
-            mut_count = sum(1 for c in mutations.at[index, col] if c.isupper())
-            if 'UTR' in mutations.at[index, col]:
-                mut_count = mut_count - (2 * mutations.at[index, col].count('UTR'))
-            cn = mutations.at[index, col][-3:]
-            m1 = mutations.at[index, col].split(' ')[0]
-            m2 = mutations.at[index, col].split(' ')[1]
+            mut_count = mutations.at[index, col].count('|') 
+            cn = mutations.at[index, col][mutations.at[index, col].find('cn')-2:mutations.at[index, col].find('cn')]
             if mut_count == 1:
+                m1 = mutations.at[index, col].split('|')[0]
                 plot_scatter(row, m1, 0, 0.4, 100)
-            elif mut_count == 2:        
+            elif mut_count == 2:
+                m1 = mutations.at[index, col].split('|')[0]
+                m2 = mutations.at[index, col].split('|')[1]
                 plot_scatter(row, m1, -0.09, 0.35, 100)
                 plot_scatter(row, m2, 0.09, 0.49, 100)
             elif mut_count > 2:
@@ -273,10 +287,14 @@ for index, row in mutations.iterrows():
                 ax2.bar(row['Sample ID'], 0.8, bottom = i, color = '#F59496', zorder = 32)
             if '2' in cn and not ('-2' in cn):
                 ax2.bar(row['Sample ID'], 0.8, bottom = i, color = '#EE2D24', zorder = 32)
+       
         if tc == 0:     # white boxes for samples with TC too low to call CNV
             ax2.bar(row['Sample ID'], height=0.7, width=0.7, bottom = i+0.05, color = '#FFFFFF', zorder = 25)
             #For just blank, 
             #ax2.bar(row['Sample ID'], 0.8, bottom = i, color = '#FFFFFF', zorder = 25)
+            
+            
+            #ax2.scatter(row.name, i+0.4, marker = 's', s = mut_dot_size, color = '#FFFFFF', zorder = 35, edgecolors = 'none', linewidth = 0)
 
 
 
@@ -311,9 +329,6 @@ name = cohort + '_' + patientID + '_oncoprint'
 
 #fig.savefig('C:\\Users\\Sarah\\Desktop\\testindonco.pdf', bbox_extra_artists=(ax3,), bbox_inches='tight')
 fig.savefig('C:/Users/Sarah/Dropbox/Ghent M1 2019/sandbox/oncoprints/M1RP_marked_unable_orderedbytime/%s.pdf' %name, bbox_extra_artists=(ax3,), bbox_inches='tight')
-
-
-
 
 
 
