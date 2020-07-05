@@ -14,19 +14,18 @@ import matplotlib.lines as mlines
 from datetime import datetime as dt
 import natsort as ns
 import re
-import matplotlib.markers as markers
 
 
 cohort = 'M1RP'
-patientID = 'ID4'
+patientID = 'ID16'
 
 all_target_genes = True    #Mark false if only want genes with mutations,not all target genes
 
 
 mpl.rc('hatch', color = '#FFFFFF', linewidth = 0.2)
-mpl.rcParams['font.size'] = 12
+mpl.rcParams['font.size'] = 9
 mpl.rcParams['text.color'] = 'k'
-mpl.rcParams['legend.fontsize'] = 12
+mpl.rcParams['legend.fontsize'] = 9
 mpl.rcParams['legend.handletextpad'] = '0.7'
 mpl.rcParams['legend.labelspacing'] = '0.2'
 mpl.rcParams['pdf.fonttype'] = 42
@@ -268,6 +267,7 @@ ax1.axhline(y=del_threshold, xmin=0,xmax=1, c="#9CC5E9", linewidth=0.7, zorder=2
 ax1.axhline(y=deep_del_threshold, xmin=0, xmax=1, c="#3F60AC", linewidth=0.7, zorder=20)
 ax1.axhline(y=gain_threshold, xmin=0, xmax=1, c="#F59496", linewidth=0.7, zorder=20)
 ax1.axhline(y=amp_threshold, xmin=0, xmax=1, c="#EE2D24", linewidth=0.7, zorder=20)
+ax1.axhline(y=50, xmin=0, xmax=1, linestyle = '--', c="#383838", linewidth=0.7, zorder=20)
 
     
     
@@ -321,20 +321,25 @@ for index, row in mutations.iterrows():
             cn = ''
             if mutations.at[index, col].find('cn') != -1:
                 cn = mutations.at[index, col][mutations.at[index, col].find('cn')-2:mutations.at[index, col].find('cn')]
-            if total_mut_count == 1:
-                m1 = mutations.at[index, col].split('|')[0]
-                plot_scatter(row, m1, 0, 0.4, 100)
-            elif total_mut_count == 2:
-                m1 = mutations.at[index, col].split('|')[0]
-                m2 = mutations.at[index, col].split('|')[1]
-                plot_scatter(row, m1, -0.09, 0.35, 100)
-                plot_scatter(row, m2, 0.09, 0.49, 100)
-            elif total_mut_count > 2:
-                if dep_mut_count == 0:
-                    ax2.scatter(row['Sample ID'], i+0.37, marker = '^', s = 30, color = 'k', zorder = 100, edgecolors = 'k', linewidth = 0.8)
-                else:
-                    marker = markers.MarkerStyle(marker = '^', fillstyle = 'right')
-                    ax2.scatter(row['Sample ID'], i+0.37, marker = marker, s = 30, color = 'k', zorder = 100, edgecolors = 'k', linewidth = 0.8)
+            if uncallable_count == 0:
+                if total_mut_count == 1:
+                    m1 = mutations.at[index, col].split('|')[0]
+                    plot_scatter(row, m1, 0, 0.4, 100)
+                elif total_mut_count == 2:
+                    m1 = mutations.at[index, col].split('|')[0]
+                    m2 = mutations.at[index, col].split('|')[1]
+                    plot_scatter(row, m1, -0.09, 0.35, 100)
+                    plot_scatter(row, m2, 0.09, 0.49, 100)
+                elif total_mut_count > 2:             
+                        ax2.scatter(row['Sample ID'], i+0.37, marker = '^', s = 30, color = 'k', zorder = 100, edgecolors = 'k', linewidth = 0.8)
+            if uncallable_count == 1:  
+                if total_mut_count == 1:
+                    m1 = mutations.at[index, col].split('|')[0]
+                    plot_scatter(row, m1, 0.09, 0.49, 100)
+                    ax2.scatter(row.name-0.09, i+0.35, marker = 's', s = mut_dot_size, color = '#FFFFFF', zorder = 35, edgecolors = 'none', linewidth = 0)
+            if uncallable_count > 1:
+                ax2.scatter(row.name-0.09, i+0.35, marker = 's', s = mut_dot_size, color = '#FFFFFF', zorder = 35, linewidth = 0)
+                ax2.scatter(row.name+0.09, i+0.49, marker = 's', s = mut_dot_size, color = '#FFFFFF', zorder = 35, linewidth = 0)
             if '-2' in cn:
                 ax2.bar(row['Sample ID'], 0.8, bottom = i, color = '#3F60AC', zorder = 32)
             if '-1' in cn:
@@ -349,13 +354,6 @@ for index, row in mutations.iterrows():
             ax2.bar(row['Sample ID'], height=0.7, width=0.7, bottom = i+0.05, color = '#FFFFFF', zorder = 120)
             #For just blank, 
             #ax2.bar(row['Sample ID'], 0.8, bottom = i, color = '#FFFFFF', zorder = 25)
-        if uncallable_count == 1:    
-            ax2.scatter(row.name, i+0.4, marker = 's', s = mut_dot_size, color = '#FFFFFF', zorder = 35, edgecolors = 'none', linewidth = 0)
-        if uncallable_count > 1:
-            ax2.scatter(row.name-0.09, i+0.35, marker = 's', s = mut_dot_size, color = '#FFFFFF', zorder = 35, linewidth = 0)
-            ax2.scatter(row.name+0.09, i+0.49, marker = 's', s = mut_dot_size, color = '#FFFFFF', zorder = 35, linewidth = 0)
-             
-
 
 ax2.spines['right'].set_visible(False)
 ax2.spines['left'].set_visible(False)
@@ -368,8 +366,9 @@ ax2.spines['top'].set_visible(False)
 ax3 = fig.add_subplot(gs[1,1])
 ax3.set_zorder(100)
 
+
 labels = ['Missense', 'Frameshift indel', 'Stopgain', 'Non-frameshift indel', 'Splice', 'Silent mutation', 'Unable to call', 'Dependent call',
-          'Amplification', 'Gain', 'Deletion', 'Deep deletion', '>2 mutations', '>2 mutations including \n dependent calls']
+          'Amplification', 'Gain', 'Deletion', 'Deep deletion', '>2 mutations']
 handles = [Patch(color = '#79B443', linewidth = 0),Patch(color = '#FFC907',linewidth = 0),
            Patch(color = '#BD4398', linewidth = 0),Patch(color = '#8c69ff',linewidth = 0),
            Patch(color = 'k',linewidth = 0), Patch(color = '#5c5c5c',linewidth = 0),
@@ -377,8 +376,7 @@ handles = [Patch(color = '#79B443', linewidth = 0),Patch(color = '#FFC907',linew
            Patch(edgecolor = '#FFFFFF', facecolor='k', linewidth = 0, hatch = '////////'),
            Patch(color = '#EE2D24', linewidth = 0),Patch(color = '#F59496',linewidth = 0),
            Patch(color = '#9CC5E9', linewidth = 0),Patch(color = '#3F60AC',linewidth = 0),
-           mlines.Line2D([], [], color='k', markeredgecolor='k', marker='^', lw=0, markersize=10, label='>2 mutations'),
-           mlines.Line2D([], [], color='k', markeredgecolor='k', marker='^', lw=0, markersize=10, label='>2 mutations including \n dependent calls', fillstyle = 'right')]
+           mlines.Line2D([], [], color='k', markeredgecolor='k', marker='^', lw=0, markersize=10, label='>2 mutations')]
 
 
 ax3.legend(handles, labels, loc = 'center left', handlelength = 0.8, frameon = False)
@@ -390,12 +388,13 @@ ax3.tick_params(left = False, bottom = False, labelleft = False, labelbottom = F
 
 
 ax4 = fig.add_subplot(gs[0,1])
-labels = ['Gain', 'Amplification', 'Deletion', 'Deep deletion']
+labels = ['Gain', 'Amplification', 'Deletion', 'Deep deletion', 'Distinction between deletion \n and deep deletion']
 handles = [mlines.Line2D([], [], color='#F59496', marker='_', lw=0, markersize=8),
            mlines.Line2D([], [], color='#EE2D24', marker='_', lw=0, markersize=8),
            mlines.Line2D([], [], color='#9CC5E9', marker='_', lw=0, markersize=8),
-           mlines.Line2D([], [], color='#3F60AC', marker='_', lw=0, markersize=8)]
-ax4.legend(handles, labels, loc = 'center left', title='Detection threshold',handlelength = 0.8, frameon = False)
+           mlines.Line2D([], [], color='#3F60AC', marker='_', lw=0, markersize=8),
+           mlines.Line2D([], [], color='#383838', linestyle='dashed', lw=0.8, markersize=8)]
+ax4.legend(handles, labels, loc = 'center left', title='Detection thresholds', title_fontsize =9, handlelength = 0.9, frameon = False)
 ax4.spines['bottom'].set_visible(False)
 ax4.spines['left'].set_visible(False)
 ax4.spines['top'].set_visible(False)
@@ -404,6 +403,6 @@ ax4.tick_params(left = False, bottom = False, labelleft = False, labelbottom = F
 
 name = cohort + '_' + patientID + '_oncoprint'
 
-fig.savefig('C:\\Users\\Sarah\\Desktop\\testindonco.pdf', bbox_extra_artists=(ax3,), bbox_inches='tight')
-fig.savefig('C:/Users/Sarah/Dropbox/Ghent M1 2019/sandbox/oncoprints/M1RP_orderedbytime_alltargetgenes/%s.pdf' %name, bbox_extra_artists=(ax3,), bbox_inches='tight')
+fig.savefig('C:\\Users\\Sarah\\Desktop\\testindonco.pdf', bbox_extra_artists=(ax4,), bbox_inches='tight')
+fig.savefig('C:/Users/Sarah/Dropbox/Ghent M1 2019/sandbox/oncoprints/M1RP_orderedbytime_alltargetgenes/%s.pdf' %name, bbox_extra_artists=(ax4,), bbox_inches='tight')
 
