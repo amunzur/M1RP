@@ -60,7 +60,7 @@ called = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/f
 mut_tc = pd.read_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_tumor_fraction_allMuts.xlsx' % cohort)
 cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_FFPE_cna.tsv' % cohort, sep = '\t')
 cn_tmp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_cfdna_cna.tsv' % cohort, sep = '\t')
-exclude = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_exclusion.tsv' % cohort, sep = '\t')
+samples = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
 
 cn = cn.append(cn_tmp, ignore_index = True)
 del cn_tmp
@@ -123,7 +123,7 @@ muts_uncalled.loc[muts_uncalled['Read_depth'] < min_reads, 'Depth_flag'] = False
 # =============================================================================
 
 muts_uncalled['Lr_flag'] = False
-muts_uncalled.loc[(muts_uncalled['Log_ratio']<=lr_max)|(muts_uncalled['GENE'].isin(cna_exclusion)),'Lr_flag']=True
+muts_uncalled.loc[muts_uncalled['Log_ratio']<=lr_max,'Lr_flag']=True
 
 # =============================================================================
 # Flag mutation on allosomes. True if on autosome. 
@@ -147,12 +147,6 @@ muts_uncalled['mut_TC'] = 2 / (1+1/muts_uncalled['Allele_frequency'])
 muts_uncalled.loc[muts_uncalled['Allosome_flag'] == False, 'mut_TC'] = muts_uncalled['Allele_frequency']
 
 # =============================================================================
-# Merge exlcusion list onto uncalled
-# =============================================================================
-
-muts_uncalled = muts_uncalled.merge(exclude, on = ['Sample ID','GENE','POSITION','CHROM','REF','ALT','EFFECT'], how = 'left')
-
-# =============================================================================
 # Remerge and sort the mut_tc table
 # =============================================================================
 
@@ -161,13 +155,9 @@ muts_uncalled = muts_uncalled[mut_tc.columns.tolist()]
 
 mut_tc = mut_tc.append(muts_uncalled, ignore_index = True)
 
-mut_tc['Manual_curation'] = mut_tc['Manual_curation'].fillna(1)
+mut_tc = mut_tc.sort_values(['Sample ID','mut_TC','Allosome_flag','Depth_flag','Lr_flag', 'gDNA_flag'], ascending = [True,False,False,False,False,False])
 
-mut_tc = mut_tc.sort_values(['Sample ID','Manual_curation','mut_TC','Allosome_flag','Depth_flag','Lr_flag', 'gDNA_flag'], ascending = [True,False,False,False,False,False,False])
-
-mut_tc = mut_tc[['Cohort', 'Patient ID', 'Sample ID','mut_TC', 'CHROM', 'POSITION', 'REF', 'ALT','GENE', 'EFFECT', 'Allele_frequency', 'Read_depth', 'NOTES', 'Log_ratio', 'Allosome_flag','Depth_flag','Lr_flag','gDNA_flag','Manual_curation']]
-
-mut_tc['Manual_curation'] = mut_tc['Manual_curation'].replace(1, np.nan)
+mut_tc = mut_tc[['Cohort', 'Patient ID', 'Sample ID','mut_TC', 'CHROM', 'POSITION', 'REF', 'ALT','GENE', 'EFFECT', 'Allele_frequency', 'Read_depth', 'NOTES', 'Log_ratio', 'Allosome_flag','Depth_flag','Lr_flag','gDNA_flag']]
 
 # =============================================================================
 # Label first mutation
@@ -194,8 +184,16 @@ mut_tc.to_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%
 # =============================================================================
 
 mut_tc = mut_tc[mut_tc['gDNA_flag'] != False]
-mut_tc = mut_tc[mut_tc['Manual_curation'] != 0]
+mut_tc = mut_tc[mut_tc['Lr_flag'] != False]
+mut_tc = mut_tc[mut_tc['Depth_flag'] != False]
 mut_tc = mut_tc.drop_duplicates('Sample ID')
+
+samples.columns = samples.iloc[0]
+samples = samples.drop(samples.index[0])
+samples = samples[samples['Cohort'] == cohort]
+mut_tc = mut_tc.merge(samples[['Cohort','Patient ID','Sample ID']], on = ['Cohort','Patient ID','Sample ID'], how = 'right')
+
+mut_tc['mut_TC'] = mut_tc['mut_TC'].fillna(0)
 
 mut_tc = mut_tc[['Cohort', 'Patient ID', 'Sample ID', 'mut_TC', 'CHROM', 'POSITION', 'GENE', 'EFFECT', 'Allele_frequency', 'Read_depth','Log_ratio']]
 mut_tc.columns = ['Cohort','Patient ID','Sample ID','mut_TC','Chromosome','Position','Gene','Effect','Variant allele frequency','Read depth at variant position','Gene Log Ratio']

@@ -19,8 +19,11 @@ Calculate adjusted Log_ratio, std, and p_value
 
 if len(sys.argv) > 1:
     cohort = sys.argv[1]
+    abridged = bool(sys.argv[3])
+
 else:
     cohort = 'M1RP'
+    abridged = False
 
 # =============================================================================
 # Helpers
@@ -60,7 +63,7 @@ cn.loc[cn['CHROMOSOME'] == 'chrX', 'ploidy'] = 1
 # Calculate Copies
 # =============================================================================
 
-cn['copies'] = cn['ploidy'] * (1 + (2**(cn['Log_ratio']-cn['lr_mean'])-1)/cn['Final tNGS_TC'])
+cn['copies'] = cn['ploidy'] * (1 + (2**(cn['Log_ratio']-cn['lr_mean'])-1)/cn['Final tNGS_TC']).clip(lower = 0)
 
 # =============================================================================
 # Calculate z scores, pvalues
@@ -70,5 +73,7 @@ cn['p_val'] = cn.apply(lambda x: stats.norm.sf(abs(x['Log_ratio']-x['lr_mean']),
 
 cn['Patient ID'] = cn['Sample ID'].str.split('_').str[1]
 
-cn.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/Targeted_sequencing_error_correction/CANdy_%s_FFPE_cna.tsv' % cohort, sep = '\t', index = None)
-
+if abridged == True:
+    cn.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/Targeted_sequencing_error_correction/CANdy_%s_FFPE_cna_abridged.tsv' % cohort, sep = '\t', index = None)
+else:
+    cn.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/Targeted_sequencing_error_correction/CANdy_%s_FFPE_cna.tsv' % cohort, sep = '\t', index = None)

@@ -20,8 +20,7 @@ else:
     cohort = 'M1RP'
     min_reads = 75
     lr_max = 0.3
-    
-cna_exclusion = []
+
 
 # =============================================================================
 # Import data
@@ -31,7 +30,6 @@ muts = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/fin
 tumor_fraction = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
 cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_FFPE_cna.tsv' % cohort, sep = '\t')
 cn_tmp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_cfDNA_cna.tsv' % cohort, sep = '\t')
-exclude = pd.read_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_tumor_fraction_allMuts.xlsx' % cohort)
 
 tumor_fraction.columns = tumor_fraction.iloc[0]
 tumor_fraction = tumor_fraction.drop(tumor_fraction.index[0])
@@ -64,7 +62,7 @@ muts.loc[muts['Read_depth'] < min_reads, 'Depth_flag'] = False
 # =============================================================================
 
 muts['Lr_flag'] = False
-muts.loc[(muts['Log_ratio']<=lr_max)|(muts['GENE'].isin(cna_exclusion)),'Lr_flag']=True
+muts.loc[muts['Log_ratio']<=lr_max,'Lr_flag']=True
 
 # =============================================================================
 # Flag mutation on allosomes. True if on autosome. 
@@ -80,17 +78,7 @@ muts.loc[muts['CHROM'].isin(['chrX','chrY']), 'Allosome_flag'] = False
 muts['gDNA_flag'] = True
 muts.loc[muts['Patient ID'].isin(missing_gDNA.get(cohort)), 'gDNA_flag'] = False
 
-# =============================================================================
-# Merge old exclusion column onto dataframe
-# =============================================================================
 
-exclude = exclude[['Sample ID','GENE','POSITION','CHROM','REF','ALT','EFFECT', 'Manual_curation']]
-
-exclude['Manual_curation'] = exclude['Manual_curation'].fillna(1)
-
-exclude.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_exclusion.tsv' % cohort, sep = '\t', index = None)
-
-muts = muts.merge(exclude, on = ['Sample ID','GENE','POSITION','CHROM','REF','ALT','EFFECT'], how = 'left')
 
 # =============================================================================
 # Calculate mut_TC for each mutation
@@ -107,15 +95,13 @@ muts = muts.merge(tumor_fraction[['Cohort','Patient ID','Sample ID']], on = ['Co
 
 muts['mut_TC'] = muts['mut_TC'].fillna(0)
 
-muts = muts.sort_values(['Sample ID','Manual_curation','mut_TC','Allosome_flag', 'Depth_flag', 'Lr_flag', 'gDNA_flag'], ascending = [True,False, False,False,False,False, False])
-
-muts['Manual_curation'] = muts['Manual_curation'].replace(1, np.nan)
+muts = muts.sort_values(['Sample ID','mut_TC','Allosome_flag', 'Depth_flag', 'Lr_flag', 'gDNA_flag'], ascending = [True,False,False,False,False, False])
 
 # =============================================================================
 # Reorder columns and save as full mutation file
 # =============================================================================
 
-muts = muts[['Cohort', 'Patient ID', 'Sample ID','mut_TC', 'CHROM', 'POSITION', 'REF', 'ALT','GENE', 'EFFECT', 'Allele_frequency', 'Read_depth', 'NOTES', 'Log_ratio', 'Allosome_flag','Depth_flag','Lr_flag','gDNA_flag','Manual_curation']]
+muts = muts[['Cohort', 'Patient ID', 'Sample ID','mut_TC', 'CHROM', 'POSITION', 'REF', 'ALT','GENE', 'EFFECT', 'Allele_frequency', 'Read_depth', 'NOTES', 'Log_ratio', 'Allosome_flag','Depth_flag','Lr_flag','gDNA_flag']]
 
 muts.to_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_tumor_fraction_allMuts.xlsx' % cohort, index = None)
 
@@ -123,7 +109,9 @@ muts.to_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_
 # Keep only top mutation per patient. All flags must be true
 # =============================================================================
 
-muts = muts[muts['gDNA_flag'] == True]
+muts = muts[muts['gDNA_flag'] != False]
+muts = muts[muts['Lr_flag'] != False]
+muts = muts[muts['Depth_flag'] != False]
 muts = muts.drop_duplicates('Sample ID')
 
 muts = muts.merge(tumor_fraction[['Cohort','Patient ID','Sample ID']], on = ['Cohort','Patient ID','Sample ID'], how = 'right')

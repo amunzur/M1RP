@@ -44,9 +44,9 @@ def get_copy_number(row):
     direction = -1 if row['Log_ratio'] < 0 else 1
     lr_dist = np.array(Parallel(n_jobs = n_cores)(delayed(get_lr_dist)(row, direction) for i in range(n_sims)))
     if direction == 1: 
-        pval = stats.norm.cdf(row['p_val'], loc = lr_dist.mean(), scale = np.std(lr_dist))
+        pval = stats.norm.cdf(row['Log_ratio'], loc = lr_dist.mean(), scale = np.std(lr_dist))
     else:
-        pval = stats.norm.sf(row['p_val'], loc = lr_dist.mean(), scale = np.std(lr_dist))
+        pval = stats.norm.sf(row['Log_ratio'], loc = lr_dist.mean(), scale = np.std(lr_dist))
     if direction == 1:
         if pval < amp_ddel_alpha and row['Log_ratio'] > lr_dist.mean():
             lr_dist2 = np.array(Parallel(n_jobs = n_cores)(delayed(get_lr_dist)(row, direction*2) for i in range(n_sims)))
@@ -63,7 +63,7 @@ def get_copy_number(row):
         if pval < amp_ddel_alpha and row['Log_ratio'] < lr_dist.mean():
             lr_dist2 = np.array(Parallel(n_jobs = n_cores)(delayed(get_lr_dist)(row, direction*2) for i in range(n_sims)))
             pval2 = stats.norm.sf(row['Log_ratio'], loc = lr_dist2.mean(), scale = np.std(lr_dist2))
-            if pval2 > amp_ddel_alpha or row['Log_ratio'] > lr_dist2.mean() or row['Log_ratio'] - row['lr_mean'] < -1.1:
+            if pval2 > amp_ddel_alpha or row['Log_ratio'] < lr_dist2.mean() or row['Log_ratio'] - row['lr_mean'] < -1.1:
                 return 0;
             else:
                 return 1

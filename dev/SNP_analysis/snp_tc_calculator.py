@@ -16,17 +16,19 @@ import sys
 # Constants
 # =============================================================================
 
-min_reads = 100
-alpha = 0.005
-min_snps = 3 # Per gene
-min_loh = 2 # Per sample, regions of LOH
+min_reads = 75
+alpha = 0.05
+min_snps = 2 # Per gene
+min_loh = 1 # Per sample, regions of LOH
 window_size = 25 # In each direction
 top_fraction = 1 # Take the top X% of genes with allelic imbalance
 sig_gene_fraction = 0.5 # 1/2 of the snps in a gene must be significant to count it
 if len(sys.argv) > 1:
     cohort = sys.argv[1]
+    nascent = sys.argv[2]
 else:    
     cohort = 'M1RP'
+    nascent = True
 
 # =============================================================================
 # Helpers
@@ -55,7 +57,14 @@ def create_depth_std(gl, window_size):
 # =============================================================================
 
 snp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/ghent_%s_hetz_snps.vcf' % cohort, sep = '\t')
-cn = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/Targeted_sequencing_error_correction/CANdy_%s_FFPE_cna.tsv' % cohort, sep = '\t')
+if nascent == True:
+    cn = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/Targeted_sequencing_error_correction/CANdy_%s_FFPE_cna_abridged.tsv' % cohort, sep = '\t') 
+    col = 'Adjusted_copy_num'
+    cn_call = 1
+else:
+    cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/%s_FFPE_cna.tsv' % cohort, sep = '\t')
+    col = 'Copy_num'
+    cn_call = -1
 
 # =============================================================================
 # Melt SNPS and create new columns. Keep only tissue samples
@@ -95,9 +104,12 @@ snp = snp.merge(depth_dists, on = 'Read depth', how = 'left')
 
 fig,ax = plt.subplots()
 ax.scatter(gl['Read depth'],gl['VAF'],s = 5, color = 'k', alpha = 0.1, zorder = 0)
-ax.plot(depth_dists['Read depth'],depth_dists['std']+0.5, zorder = 100, lw = 2)
+ax.plot(depth_dists['Read depth'],depth_dists['std']+0.5, zorder = 100, lw = 2, label = 'Standard deviation')
 
 ax.set_xlim(-0.5, 1000)
+ax.set_ylabel('VAF')
+ax.set_xlabel('Read depth')
+ax.legend()
 
 # =============================================================================
 # Merge germline back onto snp dataframe
@@ -108,16 +120,6 @@ gl_grouped = gl.copy()
 gl = gl[['CHROM','POSITION','REF','ALT','Patient ID','Called']]
 snp = snp.merge(gl, on = ['CHROM','POSITION','REF','ALT','Patient ID'])
 
-# =============================================================================
-# Get snp counts per patient
-# =============================================================================
-
-gl_grouped = gl_grouped.drop_duplicates(['Patient ID','CHROM','POSITION','REF','ALT'])
-gl_grouped = gl_grouped.groupby(['Patient ID']).count()[['CHROM']]
-gl_grouped.columns = ['Patient SNP count']
-gl_grouped = gl_grouped.reset_index()
-
-snp = snp.merge(gl_grouped, on = 'Patient ID')
 
 # =============================================================================
 # Keep snps with min reads > x
@@ -129,7 +131,7 @@ snp = snp[snp['Read depth'] >= min_reads]
 # Merge Gene onto position
 # =============================================================================
 
-cn = cn[['Sample ID','GENE','CHROMOSOME','START','END','Log_ratio','Adjusted_copy_num']]
+cn = cn[['Sample ID','GENE','CHROMOSOME','START','END','Log_ratio',col]]
 snp = label_genes(snp, cn)
 
 # =============================================================================
@@ -146,9 +148,8 @@ snp = snp[snp['SNP count'] >= min_snps]
 # Keep only genes with no gain called. Label type of potential LOH
 # =============================================================================
 
-snp = snp.merge(cn[['Sample ID','GENE','Adjusted_copy_num','Log_ratio']], on = ['Sample ID','GENE'], how = 'left')
-tmp = snp[snp['Adjusted_copy_num'].isnull()]
-snp = snp[(snp['Adjusted_copy_num'] == 1)|((snp['Adjusted_copy_num'] == -1)& (snp['Log_ratio'] < 0))]
+snp = snp.merge(cn[['Sample ID','GENE',col,'Log_ratio']], on = ['Sample ID','GENE'], how = 'left')
+snp = snp[snp[col] == cn_call]
 
 # =============================================================================
 # Get number of genes evaluable per sample
@@ -160,6 +161,15 @@ gene_counts = gene_counts.groupby(["Sample ID"]).count()[['GENE']]
 gene_counts.columns = ['Gene count']
 gene_counts = gene_counts.reset_index()
 snp = snp.merge(gene_counts, on = ['Sample ID'], how = 'left')
+
+# =============================================================================
+# Get sample SNP count being tested
+# =============================================================================
+
+pt_snp_count = snp.copy()
+pt_snp_count = pt_snp_count.groupby(['Sample ID']).count()[['CHROM']].reset_index()
+pt_snp_count.columns = ['Sample ID','Sample SNP count']
+snp = snp.merge(pt_snp_count, on = 'Sample ID', how = 'left')
 
 # =============================================================================
 # Create p-values for each snp
@@ -174,7 +184,7 @@ snp['snp_significant'] = None
 snp.loc[snp['p-val'] < alpha/(snp['SNP count']), 'snp_significant'] = True
 
 snp['Significant'] = False
-snp.loc[snp['combined p-val'] < alpha/(snp['SNP count']*snp['Gene count']), 'Significant'] = True
+snp.loc[snp['combined p-val'] < alpha/snp['Sample SNP count'], 'Significant'] = True
 
 # =============================================================================
 # Calculate number of significant SNPs per gene. Keep only genes that have >= sig_gene_fraction
@@ -185,7 +195,7 @@ sig_counts_per_gene = snp[['Sample ID','GENE','snp_significant']].groupby(['Samp
 sig_counts_per_gene.columns = ['Sample ID','GENE','sig_snps_in_gene']
 
 snp = snp.merge(sig_counts_per_gene, on = ['Sample ID','GENE'])
-snp.loc[snp['sig_snps_in_gene'] <= sig_gene_fraction * snp['SNP count'].clip(lower = 2), 'Significant'] = False
+snp.loc[snp['sig_snps_in_gene'] < sig_gene_fraction * snp['SNP count'].clip(lower = 2), 'Significant'] = False
 
 # =============================================================================
 # Calculate number of regions of LOH

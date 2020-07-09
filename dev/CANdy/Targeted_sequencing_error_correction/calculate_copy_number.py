@@ -25,43 +25,46 @@ else:
     alpha = 0.001    
 n_cores = multiprocessing.cpu_count()
 n_sims = 1000
+amp_ddel_alpha = 0.01
 
 # =============================================================================
 # Helpers
 # =============================================================================
 
 def get_noise_tc(tc):
-    return max(0, min(0.99999,tc * (2**np.random.normal(0,0.1)) + np.random.normal(0,0.02)))
+    return max(0, min(0.9999,tc * (2**np.random.normal(0,0.1)) + np.random.normal(0,0.02)))
     
-def get_p_dist(row, cn_change):
-    adj_tc = get_noise_tc(row['Final tNGS_TC'])
+def get_lr_dist(row, cn_change):
+    adj_tc = get_noise_tc(row['ctDNA%'])
     ploidy = row['ploidy']
-    cn = ploidy + cn_change
+    cn = max(0, ploidy + cn_change)
     sim_lr = math.log2(1 + adj_tc*(cn/ploidy - 1)) + row['lr_mean']
-    pval = 2*(1-stats.norm.cdf(abs((sim_lr - row['lr_mean'])/row['lr_std'])))
-    return pval;
+    return sim_lr;
 
 def get_copy_number(row):
     direction = -1 if row['Log_ratio'] < 0 else 1
-    ## Check if p value is significantly less than 1 copy change
-    p_dist = np.array(Parallel(n_jobs = n_cores)(delayed(get_p_dist)(row, direction) for i in range(n_sims)))
-    pval = stats.norm.cdf(row['p_val'], loc = p_dist.mean(), scale = np.std(p_dist))
-    
+    lr_dist = np.array(Parallel(n_jobs = n_cores)(delayed(get_lr_dist)(row, direction) for i in range(n_sims)))
+    if direction == 1: 
+        pval = stats.norm.cdf(row['Log_ratio'], loc = lr_dist.mean(), scale = np.std(lr_dist))
+    else:
+        pval = stats.norm.sf(row['Log_ratio'], loc = lr_dist.mean(), scale = np.std(lr_dist))
     if direction == 1:
-        if pval < alpha and row['p_val'] < p_dist.mean():
-            p_dist2 = np.array(Parallel(n_jobs = n_cores)(delayed(get_p_dist)(row, direction*2) for i in range(n_sims)))
-            pval2 = stats.norm.cdf(row['p_val'], loc = p_dist2.mean(), scale = np.std(p_dist2))
-            if pval2 > alpha or row['p_val'] < p_dist2.mean():
+        if pval < amp_ddel_alpha and row['Log_ratio'] > lr_dist.mean():
+            lr_dist2 = np.array(Parallel(n_jobs = n_cores)(delayed(get_lr_dist)(row, direction*2) for i in range(n_sims)))
+            pval2 = stats.norm.cdf(row['Log_ratio'], loc = lr_dist2.mean(), scale = np.std(lr_dist2))
+            if pval2 > amp_ddel_alpha or row['Log_ratio'] > lr_dist2.mean() or row['Log_ratio'] - row['lr_mean'] > -1.1:
                 return 4;
             else:
-                return 3;
+                return 3
+        elif row['Log_ratio'] - row['lr_mean'] > 1.1:
+            return 4;
         else:
             return 3
     elif direction == -1:
-        if pval < alpha and row['p_val'] < p_dist.mean():
-            p_dist2 = np.array(Parallel(n_jobs = n_cores)(delayed(get_p_dist)(row, direction*2) for i in range(n_sims)))
-            pval2 = stats.norm.cdf(row['p_val'], loc = p_dist2.mean(), scale = np.std(p_dist2))
-            if pval2 > alpha or row['p_val'] < p_dist2.mean() or row['Log_ratio'] - row['lr_mean'] < -1.1:
+        if pval < amp_ddel_alpha and row['Log_ratio'] < lr_dist.mean():
+            lr_dist2 = np.array(Parallel(n_jobs = n_cores)(delayed(get_lr_dist)(row, direction*2) for i in range(n_sims)))
+            pval2 = stats.norm.sf(row['Log_ratio'], loc = lr_dist2.mean(), scale = np.std(lr_dist2))
+            if pval2 > amp_ddel_alpha or row['Log_ratio'] < lr_dist2.mean() or row['Log_ratio'] - row['lr_mean'] < -1.1:
                 return 0;
             else:
                 return 1
@@ -90,7 +93,7 @@ cn = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/Targeted_sequencing_error_
 cn['Adjusted_copy_num'] = np.nan
 
 for index, row in cn.iterrows():
-    if row['p_val'] < alpha:
+    if row['p_val'] < alpha / 73:
         cn.at[index, 'Adjusted_copy_num'] = get_copy_number(row)
     elif row['Final tNGS_TC'] < row['min_tc_1loss']:
         cn.at[index, 'Adjusted_copy_num'] = -1

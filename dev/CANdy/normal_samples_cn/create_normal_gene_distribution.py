@@ -79,3 +79,5 @@ plt.tight_layout()
 
 gene_noise.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/normal_samples_cn/normal_samples_cn.tsv', sep = '\t')
 plt.savefig('G:\\Andy Murtha\\Ghent\M1RP\\dev\\Figures\\normal_samples_cn\\normal_samples_cn.pdf')
+
+plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/CANdy/normal_samples_cn/normal_samples_cn.pdf')
