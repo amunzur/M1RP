@@ -17,7 +17,7 @@ from colour import Color
 
 min_shared_threshold = 0.3
 min_truncal_threshold = 0.8
-cohort = 'M1RP'
+cohort = 'M1B'
 
 
 # ============================================================================
@@ -189,7 +189,7 @@ matrix2 = matrix2[pt_order.index.tolist()]
 # Plot matrix
 # =============================================================================
 
-fig, [ax,ax2] = plt.subplots(ncols = 2, gridspec_kw={'width_ratios':[1,0.1]})
+fig, [ax,ax2] = plt.subplots(ncols = 2, gridspec_kw={'width_ratios':[1,0.1]}, figsize = (8,5))
 
 for y, (index, row) in enumerate(matrix.iterrows()):
     for x, col in enumerate(matrix.columns):
@@ -240,7 +240,8 @@ labels = ['Not present',
           '90%',
           '100%',]
 
-ax2.legend(handles, labels, fontsize = 8, handlelength = 0.8, labelspacing = 0)
+ax2.legend(handles, labels, fontsize = 10, handlelength = 0.8, labelspacing = 0)
 plt.tight_layout()
 
 plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/%struncal_mutation_oncoprint.pdf' % cohort)
+plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/%struncal_mutation_oncoprint.png' % cohort, dpi = 400)
