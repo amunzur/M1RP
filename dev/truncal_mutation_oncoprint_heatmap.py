@@ -17,8 +17,7 @@ from colour import Color
 
 min_shared_threshold = 0.3
 min_truncal_threshold = 0.8
-cohort = 'M1B'
-
+cohort = 'M1RP'
 
 # ============================================================================
 # Helpers
@@ -115,6 +114,7 @@ pt_sample_counts = pt_sample_counts.reset_index()
 # Get mutation counts
 # =============================================================================
 
+muts = muts[muts['Patient ID'].isin(pt_sample_counts['Patient ID'])]
 mut_counts = muts.groupby(['Patient ID','GENE','POSITION','EFFECT']).count()[['CHROM']]
 mut_counts.columns = ['Mutant samples']
 mut_counts = mut_counts.reset_index()
