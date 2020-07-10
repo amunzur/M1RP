@@ -217,10 +217,30 @@ ax2.xaxis.set_visible(False)
 ax2.spines['bottom'].set_visible(False)
 ax2.spines['left'].set_visible(False)
 
-# handles = [mpatches.Patch(color = truncal_color),mpatches.Patch(color = shared_color),mpatches.Patch(color = rare_color)]
-# labels = ['Truncal mutation\n>80% of samples','Shared mutation\n>50% of samples','Private mutation\n<30% of samples']
+handles = [mpatches.Patch(color = '#efefef'),
+           mpatches.Patch(color = colorslist[0]),
+           mpatches.Patch(color = colorslist[4]),
+           mpatches.Patch(color = colorslist[24]),
+           mpatches.Patch(color = colorslist[34]),
+           mpatches.Patch(color = colorslist[44]),
+           mpatches.Patch(color = colorslist[54]),
+           mpatches.Patch(color = colorslist[64]),
+           mpatches.Patch(color = colorslist[74]),
+           mpatches.Patch(color = colorslist[84]),
+           mpatches.Patch(color = colorslist[94]),]
+labels = ['Not present',
+          '5% of samples',
+          '20%',
+          '30%',
+          '40%',
+          '50%',
+          '60%',
+          '70%',
+          '80%',
+          '90%',
+          '100%',]
 
-# ax2.legend(handles, labels, fontsize = 8, handlelength = 0.8)
+ax2.legend(handles, labels, fontsize = 8, handlelength = 0.8, labelspacing = 0)
 plt.tight_layout()
 
 plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/%struncal_mutation_oncoprint.pdf' % cohort)
