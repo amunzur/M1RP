@@ -27,7 +27,7 @@ if len(sys.argv) > 1:
     cohort = sys.argv[1]
     nascent = sys.argv[2]
 else:    
-    cohort = 'M1RP'
+    cohort = 'M1B'
     nascent = True
 
 # =============================================================================
@@ -256,78 +256,21 @@ tc = tc.reset_index()
 tc = snp[['Sample ID','Gene count','Copy neutral gene count','Num LOH']].merge(tc, on = 'Sample ID', how = 'left')
 tc['snp_TC'] = tc['snp_TC'].fillna(0)
 tc['Num LOH'] = tc['Num LOH'].fillna(0)
-tc = tc.drop_duplicates('Sample ID')[['Sample ID','VAF','snp_TC','Gene count','Num LOH','Copy neutral gene count']]
-tc.columns = ['Sample ID','median LOH VAF','snp_TC','Gene count','LOH gene count','Copy neutral gene count']
+tc = tc.drop_duplicates('Sample ID')[['Sample ID','snp_TC','VAF','Gene count','Num LOH','Copy neutral gene count']]
+tc.columns = ['Sample ID','snp_TC','median LOH VAF','Gene count','LOH gene count','Copy neutral gene count']
 
 # =============================================================================
-# Merge mut_TC calls onto snp_TC
-# =============================================================================
-if cohort in ['M1B','M1RP']:
-    mut_TC = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_tumor_fraction.tsv' % cohort, sep = '\t')
-elif cohort == 'lum':
-    mut_TC = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/lm_tc.tsv', sep = '\t')
-    mut_TC['mut_TC'] = mut_TC['mut_TC'] / 100
-    mut_TC = mut_TC[['Sample ID','mut_TC']]
-else:
-    mut_TC = pd.read_csv('C:/Users/amurtha/Dropbox/2017 - Abi-enza second manuscript/Data freeze/ctdna_fractions.tsv', sep = '\t', header = None, names = ['Sample ID','mut_TC'])
-    mut_TC['mut_TC'] = mut_TC['mut_TC'] / 100
-
-
-mut_TC['mut_TC'] = mut_TC['mut_TC'].fillna(0)
-tc = mut_TC.merge(tc, on = 'Sample ID', how = 'left')
-
-pos_tc = tc.copy()
-pos_tc = pos_tc[(pos_tc['snp_TC'] != 0)&(pos_tc['mut_TC'] != 0)]
-
-pos_tc['residual'] = pos_tc['snp_TC'] - pos_tc['mut_TC']
-
-tc['Sample type'] = tc['Sample ID'].str.split('_').str[2]
-tc['order'] = 1
-if cohort != 'abienza':
-    tc.loc[tc['Sample type'] == 'cfDNA', 'order'] = 2
-
-tc['Copy neutral gene count'] = tc['Gene count'] - tc['LOH gene count']
-
-tc = tc.drop(['Sample type','order'], axis = 1)
-
-tc.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_tc_snp.tsv' % cohort, sep = '\t', index = None)
-tc.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/%s_tc_snp.tsv' % cohort, sep = '\t', index = None)
-
-snp = snp.sort_values(['Sample ID','Significant'], ascending = [True, False])
-snp.to_csv('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_all_snp.tsv' % cohort, sep = '\t', index = None)
-snp.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/%s_all_snp.tsv' % cohort, sep = '\t', index = None)
-
-# =============================================================================
-# Plot mut_TC vs snp_TC
+# Merge right onto all samples and fill snp_TC as 0
 # =============================================================================
 
-tc = tc[~tc['snp_TC'].isnull()]
-pos_tc = pos_tc[~pos_tc['snp_TC'].isnull()]
+samples = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
+samples.columns = samples.iloc[0]
+samples = samples.drop(samples.index[0])
 
-fig,ax = plt.subplots()
+samples = samples[samples['Cohort'] == cohort]
+samples = samples[['Cohort','Patient ID','Sample ID']]
 
-ax.scatter(tc['mut_TC'],tc['snp_TC'], s = 10, c = 'k', alpha = 0.5)
-ax.plot([0,1],[0,1])
-ax.set_ylabel('snp_TC')
-ax.set_ylim(0,1)
-ax.set_xlabel('mut_TC')
-ax.set_xlim(0,1)
+tc = samples.merge(tc, on = 'Sample ID', how = 'left')
+tc['snp_TC'] = tc['snp_TC'].fillna(0)
 
-ax.set_title(cohort)
-
-linregress = stats.linregress(pos_tc['mut_TC'], pos_tc['snp_TC'])
-slope = str(round(linregress[0],2))
-r = str(round(linregress[2],2))
-std_xy = round(math.sqrt(pos_tc['residual'].apply(lambda x: x**2).sum()/len(pos_tc['residual'])),2)
-std_xy = str(std_xy)
-
-ax.plot([0,1],[linregress[1],linregress[0]+linregress[1]], linestyle = 'dashed')
-
-ax.text(x = 0.01, y = 0.95, s = 'm: %s, r: %s\nstd from y=x: %s\nn=%i' % (slope, r, std_xy, len(tc)))
-
-
-print(stats.linregress(pos_tc['mut_TC'], pos_tc['snp_TC']))
-print(math.sqrt(pos_tc['residual'].apply(lambda x: x**2).sum() / len(pos_tc['residual'])))
-
-plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/SNP_analysis/%s_mutsnpTC_scatter.pdf' % cohort)
-plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/SNPs/%s_mutsnpTC_scatter.pdf' % cohort)
+tc.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_snp_tc.tsv' % cohort, sep = '\t', index = None)

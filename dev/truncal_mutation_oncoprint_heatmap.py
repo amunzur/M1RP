@@ -17,7 +17,7 @@ from colour import Color
 
 min_shared_threshold = 0.3
 min_truncal_threshold = 0.8
-cohort = 'M1RP'
+cohort = 'M1B'
 
 # ============================================================================
 # Helpers
@@ -27,7 +27,7 @@ def keepCodingMutations(df_muts):
     return df_muts[(df_muts['EFFECT'].str.contains("Missense", regex=False)) | (df_muts['EFFECT'].str.contains("Stopgain", regex=False)) | (df_muts['EFFECT'].str.contains("Frameshift", regex=False)) | (df_muts['EFFECT'].str.contains("Splice", regex=False)) | (df_muts['EFFECT'].str.contains("Non-frameshift indel", regex=False))]
 
 def get_color(per, colorslist):
-    return colorslist[int(per*100-6)];
+    return colorslist[int(per*100-5)];
 
 def hex_to_RGB(hex):
   ''' "#FFFFFF" -> [255,255,255] '''
@@ -143,7 +143,7 @@ matrix2 = pd.DataFrame(index = genes, columns = pts)
 # Get color list
 # =============================================================================
 
-colorslist = linear_gradient('#FFC0CB', '#b20000', 95)['hex']
+colorslist = linear_gradient('#FFC0CB', '#b20000', 96)['hex']
 
 # =============================================================================
 # Fill matrix
@@ -155,7 +155,8 @@ null_color = '#efefef'
 for index, row in mut_counts.iterrows():
     if not pd.isnull(matrix.at[row['GENE'],row['Patient ID']]):
         matrix2.at[row['GENE'],row['Patient ID']] = get_color(row['Percent'], colorslist)
-    matrix.at[row['GENE'],row['Patient ID']] = get_color(row['Percent'], colorslist)
+    else:
+        matrix.at[row['GENE'],row['Patient ID']] = get_color(row['Percent'], colorslist)
     
 matrix = matrix.fillna(null_color)
 
@@ -204,7 +205,7 @@ for y, (index, row) in enumerate(matrix.iterrows()):
             ax.plot([x,x+0.8],[y,y+0.8], c = 'w', zorder = 1000, lw = 0.5)
 
 ax.set_yticks(np.arange(0.4,len(genes),1))
-ax.set_yticklabels(gene_order.sort_values(ascending = False).index)
+ax.set_yticklabels(matrix.index)
 ax.set_xticks(np.arange(0.4,len(pts),1))
 ax.set_xticklabels(pt_order.index, rotation = 90)
 ax.set_title(cohort)
