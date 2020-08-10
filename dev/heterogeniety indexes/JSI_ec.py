@@ -5,13 +5,13 @@ Created on Tue Jul 28 11:15:04 2020
 modified by echen
 """
 
+import seaborn as sns
+import matplotlib.gridspec
 import pandas as pd
 import itertools
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.cluster.hierarchy import dendrogram, linkage
-from scipy.cluster import hierarchy
 
 # =============================================================================
 # Constants
