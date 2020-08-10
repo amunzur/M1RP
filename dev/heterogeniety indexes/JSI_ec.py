@@ -2,10 +2,12 @@
 """
 Created on Tue Jul 28 11:15:04 2020
 @author: amurtha
+modified by echen
 """
 
 import pandas as pd
 import itertools
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.cluster.hierarchy import dendrogram, linkage
@@ -64,10 +66,10 @@ tc = tc[tc['Cohort'] == cohort]
 tc['Final tNGS_TC'] = tc['Final tNGS_TC'].str.split('%').str[0].astype(float) / 100
 tc = tc[tc['Final tNGS_TC'] > 0]
 
-# Test run on ID1
 tc = tc[tc['Patient ID'].isin([patient])]
 
 tc_dict = dict(zip(tc['Sample ID'].tolist(), tc['Final tNGS_TC'].tolist()))
+
 # =============================================================================
 # Keep samples with TC > 40%
 # =============================================================================
@@ -80,7 +82,6 @@ tc_dict = dict(zip(tc['Sample ID'].tolist(), tc['Final tNGS_TC'].tolist()))
 
 ls = []
 
-# test run on ID1
 for pt in [patient]:
     samples = tc[tc['Patient ID'] == pt]['Sample ID'].tolist()
     ls.append(list(itertools.product(samples, samples)))
@@ -114,58 +115,72 @@ for index, row in jsi.iterrows():
     else:
         value = 0
     matrix.at[sample1, sample2] = value
+
+samples = tc[tc['Patient ID'] == patient]['Sample ID'].tolist()
+matrix_tmp = matrix[matrix.index.isin(samples)][samples].fillna(1)
+
+# =============================================================================
+# Removing M1RP_IDX from columns and rows for clarity
+# =============================================================================
+for i, col in enumerate(matrix_tmp.columns):
+    if 'cfDNA' not in col:
+        col = col.split("_")[2]
+    else:
+        col = col.split("_")[2] + col.split("_")[3]
+    matrix_tmp = matrix_tmp.rename(columns={matrix_tmp.columns[i]: col})
+    
+matrix_tmp = matrix_tmp.reset_index()
+for index, row in matrix_tmp.iterrows():
+    name = matrix_tmp.at[index,'index']
+    if 'cfDNA' not in name:
+        matrix_tmp.at[index,'index'] = name.split("_")[2]
+    else:
+        matrix_tmp.at[index,'index'] = name.split("_")[2] + name.split("_")[3]
+matrix_tmp = matrix_tmp.set_index('index')
+
+for index, row in tc.iterrows():
+    name = tc.at[index,'Sample ID']
+    if 'cfDNA' not in name:
+        tc.at[index,'Sample ID'] = name.split("_")[2]
+    else:
+        tc.at[index,'Sample ID'] = name.split("_")[2] + name.split("_")[3]
 # =============================================================================
 # Create and plot per patient matrix
 # =============================================================================
-#  for pt in tc['Patient ID'].unique()
-# Test run on ID1
-for pt in [patient]:
-    samples = tc[tc['Patient ID'] == pt]['Sample ID'].tolist()
-    fig,[[ax1,ax2],[ax3,ax4]] = plt.subplots(ncols = 2, nrows = 2, sharey = 'row', gridspec_kw = {'width_ratios':[4,1], 'height_ratios':[1,4],'wspace':0.01, 'hspace':0.1}, figsize = (10,10))
-    
 
-#     matrix_tmp = matrix[matrix.index.isin(samples)][samples].fillna(1).to_numpy()
-#     matrix_tmp = linkage(matrix_tmp)
-#     dend = dendrogram(matrix_tmp, ax = ax1)
-#     ax1.set_xticks(np.arange(0,len(samples),1))
-#     order = order.sort_values('order',ascending = True).reset_index().drop('index',axis=1)
-
-    # ploting dendrogram
-    matrix_tmp = matrix[matrix.index.isin(samples)][samples].fillna(1)
-    Z = hierarchy.linkage(matrix_tmp, 'ward')
-    dend = hierarchy.dendrogram(Z, ax = ax1, leaf_rotation=90, leaf_font_size=8, labels=matrix_tmp.index)
+g = sns.clustermap(matrix_tmp,
+                   figsize=(18, 9),
+                   metric="correlation",
+                   cmap="BuPu",
+                   cbar_pos=None)
+g.ax_row_dendrogram.set_visible(False)
+g.gs.update(left=0.03, right=0.48)
+ax = g.ax_heatmap
+ax.set_ylabel("")
+plt.setp(g.ax_heatmap.get_xticklabels(), rotation=90)
+plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
 
 
-    # ploting JSI matrix
-    order = pd.DataFrame({'order':dend.get('ivl')})
+gs2 = matplotlib.gridspec.GridSpec(1,3, left=0.54,top=0.795) 
+ax2 = g.fig.add_subplot(gs2[0])
+ax2.set_xlim((0,1))
+ax2.tick_params(left = False, labelleft = False)
+ax2.spines['right'].set_visible(False)
+ax2.spines['top'].set_visible(False)
 
-    # ax1.tick_params(bottom = False, labelbottom = False)
-    samples = order['order'].tolist()
-    
-    for x in np.arange(0,len(samples),1):
-        for y in np.arange(x,len(samples),1):
-            sample1 = samples[x]
-            sample2 = samples[y]
-            if sample1 == sample2:
-                val = 0
-            else:
-                val = 1 - matrix.at[sample1, sample2]
-            ax3.bar(x,0.8, bottom = y, color = str(round(val, 3)))
-    ax3.set_xticks(np.arange(0,len(samples),1))
-    ax3.set_xticklabels(samples, rotation = 90)
-    ax3.set_yticks(np.arange(0.4,len(samples),1))
-    ax3.set_yticklabels(samples)
-    
-    # ploting TC
-    tc = tc.set_index('Sample ID')
-    tc = tc.reindex(samples)
-    tc = tc.reset_index()
-    
-    ypos =np.arange(0.4,len(samples),1)
-    ax4.barh(ypos, tc['Final tNGS_TC'],color = '#808080')
-    ax4.set_xlim(0,1)
-    ax4.set_xlabel('TC%', fontsize=12)
-    ax4.set_xticks([0, 0.20, 0.40, 0.60, 0.80, 1])
-    ax4.set_xticklabels([0, 20, 40, 60, 80, 100],fontsize=12)
+samples = list()
+a = g.ax_heatmap.get_yticklabels()
+for x in a:
+    samples.append(x.get_text())
+tc = tc.set_index('Sample ID')
+tc = tc.reindex(samples)
+tc = tc.reset_index()
 
-    fig.savefig(patient+'_jsi.pdf',bbox_inches='tight')
+sns.barplot(x="Final tNGS_TC",y='Sample ID',data=tc, orient="h", color='grey', ax = ax2,ci=None)
+ax2.set(xlabel="TC", ylabel = "")
+g.fig.suptitle(cohort+"_"+patient, x=0.4,y=1,fontsize=16)
+
+
+
+filename = cohort + "_" + patient + "_JSI.pdf"
+g.savefig(filename)
