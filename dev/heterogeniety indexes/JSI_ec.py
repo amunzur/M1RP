@@ -71,10 +71,10 @@ tc = tc[tc['Patient ID'].isin([patient])]
 tc_dict = dict(zip(tc['Sample ID'].tolist(), tc['Final tNGS_TC'].tolist()))
 
 # =============================================================================
-# Keep samples with TC > 40%
+# Keep samples with TC > 20%
 # =============================================================================
 
-# tc = tc[tc['Final tNGS_TC'] > 0.4]
+tc = tc[tc['Final tNGS_TC'] > 0.2]
 
 # =============================================================================
 # Create same patient sample combination list
@@ -148,21 +148,22 @@ for index, row in tc.iterrows():
 # Create and plot per patient matrix
 # =============================================================================
 
+# ploting heatmap and dendrogram
 g = sns.clustermap(matrix_tmp,
                    figsize=(18, 9),
-                   metric="correlation",
                    cmap="BuPu",
                    cbar_pos=None)
 g.ax_row_dendrogram.set_visible(False)
 g.gs.update(left=0.03, right=0.48)
 ax = g.ax_heatmap
 ax.set_ylabel("")
-plt.setp(g.ax_heatmap.get_xticklabels(), rotation=90)
+plt.setp(g.ax_heatmap.get_xticklabels(), rotation=90,fontsize=18)
 plt.setp(g.ax_heatmap.get_yticklabels(), rotation=0)
 
-
-gs2 = matplotlib.gridspec.GridSpec(1,3, left=0.54,top=0.795) 
+# ploting tc
+gs2 = matplotlib.gridspec.GridSpec(1,3, left=0.53,top=0.795)
 ax2 = g.fig.add_subplot(gs2[0])
+
 ax2.set_xlim((0,1))
 ax2.tick_params(left = False, labelleft = False)
 ax2.spines['right'].set_visible(False)
@@ -172,6 +173,8 @@ samples = list()
 a = g.ax_heatmap.get_yticklabels()
 for x in a:
     samples.append(x.get_text())
+
+    
 tc = tc.set_index('Sample ID')
 tc = tc.reindex(samples)
 tc = tc.reset_index()
@@ -179,7 +182,6 @@ tc = tc.reset_index()
 sns.barplot(x="Final tNGS_TC",y='Sample ID',data=tc, orient="h", color='grey', ax = ax2,ci=None)
 ax2.set(xlabel="TC", ylabel = "")
 g.fig.suptitle(cohort+"_"+patient, x=0.4,y=1,fontsize=16)
-
 
 
 filename = cohort + "_" + patient + "_JSI.pdf"
