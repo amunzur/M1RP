@@ -17,6 +17,7 @@ from scipy.cluster.hierarchy import dendrogram, linkage,fcluster
 # =============================================================================
 
 matplotlib.rcParams['lines.linewidth'] = 0.5
+matplotlib.rcParams['hatch.linewidth'] = 0.25
 
 cohort = 'M1RP'
 tc_cutoff = 0.375
@@ -48,9 +49,9 @@ def plot_mutations(pt_muts, ax):
     muts_i = pt_muts[pt_muts['Independent'] == True].copy()
     muts_ni = pt_muts[pt_muts['Independent'] == False].copy()
     if len(muts_i) > 0:
-        ax.scatter(muts_i['x'], muts_i['y'], color = muts_i['color'], marker = 's', s = 6, zorder = 100)
+        ax.scatter(muts_i['x'], muts_i['y'], color = muts_i['color'], marker = 's', s = 6, zorder = 100, lw = 0)
     if len(muts_ni) > 0:
-        ax.scatter(muts_ni['x'], muts_ni['y'], color = muts_ni['color'], marker = 's', s = 6, zorder = 100, hatch = '/')
+        ax.scatter(muts_ni['x'], muts_ni['y'], facecolor = muts_ni['color'], marker = 's', s = 6, zorder = 100, hatch = '/////////////////', lw = 0, edgecolor = 'w')
     
 
 # =============================================================================
@@ -109,8 +110,8 @@ cn = cn[cn['Sample ID'].isin(tc['Sample ID'])]
 # For loop to plot entire figure
 # =============================================================================
 
-# for pt in ['ID1']:
-for pt in tc['Patient ID'].unique().tolist():
+for pt in ['ID23']:
+# for pt in tc['Patient ID'].unique().tolist():
     # =============================================================================
     # Get sample order
     # =============================================================================
@@ -240,7 +241,7 @@ for pt in tc['Patient ID'].unique().tolist():
     gene_dict = dict(zip(gene_list, np.arange(len(gene_list))))
     
     pt_cn['y'] = pt_cn.apply(lambda x: gene_dict.get(x['GENE']) + x["CHROM"]-(1 if x['CHROM'] < 18 else 2), axis=1)
-    if len(pt_muts) > 1:
+    if len(pt_muts) > 0:
         pt_muts['y'] = pt_muts.apply(lambda x: gene_dict.get(x['GENE']) + 0.4+ x["CHROM"]- (1 if x['CHROM'] < 18 else 2), axis=1)
     else:
         pt_muts['y'] = 0
@@ -299,7 +300,7 @@ for pt in tc['Patient ID'].unique().tolist():
     gene_dict = dict(zip(gene_list, np.arange(len(gene_list))))
     
     pt_ltc_cn['y'] = pt_ltc_cn.apply(lambda x: gene_dict.get(x['GENE']) + x["CHROM"]-(1 if x['CHROM'] < 18 else 2), axis=1)
-    if len(pt_ltc_muts) > 1:
+    if len(pt_ltc_muts) > 0:
         pt_ltc_muts['y'] = pt_ltc_muts.apply(lambda x: gene_dict.get(x['GENE']) + 0.4+ x["CHROM"]- (1 if x['CHROM'] < 18 else 2), axis=1)
     else:
         pt_ltc_muts['y'] = 0
@@ -332,7 +333,7 @@ for pt in tc['Patient ID'].unique().tolist():
     ax7.set_xlim(-0.5,len(pt_lowtc_samples)-0.5)
     ax7.set_yticks([0.66])
     ax7.set_ylim(0,1)
-    ax7.set_title('Low tumor content prevents accurate clustering', fontsize = 6)
+    ax7.set_title('Low tumor content\nprevents accurate clustering', fontsize = 6)
     ax7.spines['left'].set_visible(False)
     ax7.spines['bottom'].set_visible(False)
     ax7.tick_params(left = False, bottom = False, labelleft = False, labelbottom = False)
