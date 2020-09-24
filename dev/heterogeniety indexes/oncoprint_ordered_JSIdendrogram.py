@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Aug 12 12:18:56 2020
+Created on Thu Aug 20 11:27:58 2020
 
 @author: amurtha
 """
@@ -33,6 +33,15 @@ coding = ['Missense','Stopgain','Spice','Frameshift','Non-framshift']
 def keepCodingMutations(df_muts):
     return df_muts[(df_muts['EFFECT'].str.contains("Missense", regex=False)) | (df_muts['EFFECT'].str.contains("Stopgain", regex=False)) | (df_muts['EFFECT'].str.contains("Frameshift", regex=False)) | (df_muts['EFFECT'].str.contains("Splice", regex=False)) | (df_muts['EFFECT'].str.contains("Non-frameshift indel", regex=False))]
 
+def get_missing_chr(cn):
+    missing_chr = pd.DataFrame({'CHROM':np.arange(1,23,1)})
+    missing_chr = missing_chr[~missing_chr['CHROM'].isin(cn['CHROM'])]
+    chr_sub = pd.DataFrame({'CHROM':np.arange(1,23,1)})
+    for index, row in chr_sub.iterrows():
+        sub = len(missing_chr[missing_chr['CHROM'] < row['CHROM']])
+        chr_sub.at[index, 'sub'] = sub
+    return dict(zip(chr_sub['CHROM'], chr_sub['sub']))
+
 def get_ytick_lables(cn):
     cn = cn[['GENE','CHROM']].drop_duplicates().reset_index(drop = True)
     length = len(cn)
@@ -43,15 +52,16 @@ def get_ytick_lables(cn):
             dfs = np.split(cn, [index+c+1])
             cn = pd.concat([dfs[0], blank_row, dfs[1]], ignore_index=True)
             c+=1
+    cn['GENE'] = cn['GENE'].apply(lambda x: "$\it{%s}$" % x)
     return cn['GENE'].tolist();
 
 def plot_mutations(pt_muts, ax):
     muts_i = pt_muts[pt_muts['Independent'] == True].copy()
     muts_ni = pt_muts[pt_muts['Independent'] == False].copy()
     if len(muts_i) > 0:
-        ax.scatter(muts_i['x'], muts_i['y'], color = muts_i['color'], marker = 's', s = 6, zorder = 100, lw = 0)
+        ax.scatter(muts_i['x'], muts_i['y'], color = muts_i['color'], marker = 's', s = 12, zorder = 100, lw = 0)
     if len(muts_ni) > 0:
-        ax.scatter(muts_ni['x'], muts_ni['y'], facecolor = muts_ni['color'], marker = 's', s = 6, zorder = 100, hatch = '/////////////////', lw = 0, edgecolor = 'w')
+        ax.scatter(muts_ni['x'], muts_ni['y'], facecolor = muts_ni['color'], marker = 's', s = 12, zorder = 100, hatch = '/////////////////', lw = 0, edgecolor = 'w')
     
 
 # =============================================================================
@@ -60,7 +70,7 @@ def plot_mutations(pt_muts, ax):
 
 muts = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/final melted mutations/M1RP_mutations_inclDependent.tsv', sep = '\t')
 cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/M1RP_allSamples_cna.tsv', sep = '\t')
-jsi = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/heterogeniety indexes/jsi_matrix.tsv', sep = '\t', index_col='Unnamed: 0')
+jsi_muts = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/dev/heterogeniety indexes/jsi_matrix.tsv', sep = '\t', index_col='Unnamed: 0')
 tc = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
 
 tc.columns = tc.iloc[0]
@@ -110,8 +120,8 @@ cn = cn[cn['Sample ID'].isin(tc['Sample ID'])]
 # For loop to plot entire figure
 # =============================================================================
 
-for pt in ['ID23']:
-# for pt in tc['Patient ID'].unique().tolist():
+# for pt in ['ID10']:
+for pt in tc['Patient ID'].unique().tolist():
     # =============================================================================
     # Get sample order
     # =============================================================================
@@ -120,7 +130,7 @@ for pt in ['ID23']:
     pt_samples = tc[tc['Patient ID'] == pt]['Sample ID'].tolist()
     pts_ltc = lowtc[lowtc['Patient ID'] == pt].copy()
     pt_lowtc_samples = pts_ltc['Sample ID'].tolist()
-    matrix_tmp = jsi[jsi.index.isin(pt_samples)][pt_samples].copy().fillna(1)
+    matrix_tmp = jsi_muts[jsi_muts.index.isin(pt_samples)][pt_samples].copy().fillna(1)
     
     pt_cn = cn[cn['Sample ID'].isin(pt_samples)].copy()
     pt_muts = muts[muts['Sample ID'].isin(pt_samples)].copy()
@@ -132,7 +142,7 @@ for pt in ['ID23']:
     # Set up figure
     # =============================================================================
     fig_width = 5/8 + .25 * (len(pt_samples)+len(pt_lowtc_samples)+1)
-    fig = plt.figure(figsize = (fig_width,11))
+    fig = plt.figure(figsize = (fig_width,9))
     gs = gridspec.GridSpec(7,4,
                            height_ratios=[1,0.1,10,0.01,0.4,0.01,0.1],
                            width_ratios=[.1,len(pt_samples),0.1,len(pt_lowtc_samples)])
@@ -148,6 +158,18 @@ for pt in ['ID23']:
     ax8 = fig.add_subplot(gs[4,3], sharey = ax3)
     
     gs.update(hspace=0.005, wspace = 0.01)
+    
+    # =============================================================================
+    # Get gene list
+    # =============================================================================
+    
+    genes = pt_cn[pt_cn['Copy_num'] != 0]['GENE']
+    genes = genes.append(pt_ltc_cn[pt_ltc_cn['Copy_num'] != 0]['GENE']).unique().tolist()
+    genes = genes + pt_muts['GENE'].append(pt_ltc_muts['GENE']).unique().tolist()
+    genes = list(set(genes))
+    
+    pt_cn = pt_cn[pt_cn['GENE'].isin(genes)]
+    pt_ltc_cn = pt_ltc_cn[pt_ltc_cn['GENE'].isin(genes)]
     
     # =============================================================================
     # Plot dendrogram()
@@ -193,7 +215,7 @@ for pt in ['ID23']:
     ax2.set_xlim(-0.5,len(samples)-0.5)
     ax2.set_yticks([0.66])
     ax2.set_ylim(0,1)
-    ax2.set_yticklabels(['Cluster'], fontsize = 6)
+    ax2.set_yticklabels([''], fontsize = 6)
     ax2.spines['left'].set_visible(False)
     ax2.spines['bottom'].set_visible(False)
     ax2.tick_params(left = False, bottom = False, labelleft = True, labelbottom = False)
@@ -237,12 +259,14 @@ for pt in ['ID23']:
     else:
         pt_muts['x'] = 0
     
-    gene_list = cn['GENE'].unique().tolist()
+    gene_list = pt_cn.append(pt_ltc_cn).sort_values('CHROM')['GENE'].unique().tolist()
     gene_dict = dict(zip(gene_list, np.arange(len(gene_list))))
     
-    pt_cn['y'] = pt_cn.apply(lambda x: gene_dict.get(x['GENE']) + x["CHROM"]-(1 if x['CHROM'] < 18 else 2), axis=1)
+    missing_chr = get_missing_chr(pt_cn.append(pt_ltc_cn))
+    
+    pt_cn['y'] = pt_cn.apply(lambda x: gene_dict.get(x['GENE']) + x["CHROM"]-(missing_chr.get(x['CHROM']) + 1), axis=1)
     if len(pt_muts) > 0:
-        pt_muts['y'] = pt_muts.apply(lambda x: gene_dict.get(x['GENE']) + 0.4+ x["CHROM"]- (1 if x['CHROM'] < 18 else 2), axis=1)
+        pt_muts['y'] = pt_muts.apply(lambda x: gene_dict.get(x['GENE']) + 0.4 + x["CHROM"] - (missing_chr.get(x['CHROM']) + 1), axis=1)
     else:
         pt_muts['y'] = 0
     
@@ -252,13 +276,13 @@ for pt in ['ID23']:
     
     ax4.bar(pt_cn['x'], 0.8, bottom = pt_cn['y'], color = pt_cn['color'], zorder = 10)
     plot_mutations(pt_muts, ax4)
-    ylables = get_ytick_lables(cn)
+    ylables = get_ytick_lables(pt_cn.append(pt_ltc_cn))
     ax4.set_yticks(np.arange(0.4,len(ylables),1))
     ax4.set_xticks(np.arange(len(samples)))
     ax4.set_yticklabels(ylables, fontsize = 6)
     
     ax4.set_xlim(-0.5,len(samples)-0.5)
-    ax4.set_ylim(0,len(gene_list)+len(cn['CHROM'].unique()))
+    ax4.set_ylim(0,len(gene_list)+len(pt_cn.append(pt_ltc_cn)['CHROM'].unique()))
     ax4.invert_yaxis()
     
     ax4.tick_params(left = False, bottom = False, labelbottom = False)
@@ -273,14 +297,19 @@ for pt in ['ID23']:
     chr_bars.columns = ['max_y']
     chr_bars = chr_bars.merge(pt_cn.groupby('CHROM').min()[['y']], left_index = True, right_index = True)
     chr_bars.columns = ['max_y','min_y']
+    chr_bars['y_ticks'] = (chr_bars['max_y'] + chr_bars['min_y']) / 2
+        
     ax0.bar(0,chr_bars['max_y']-chr_bars['min_y']+0.8, bottom = chr_bars['min_y'], color = 'k')
     
-    ax0.set_yticks(np.arange(0.4,len(ylables),1))
-    ax0.set_ylim(0,len(gene_list)+len(cn['CHROM'].unique()))
+    chr_labels = pt_cn.append(pt_ltc_cn)['CHROM'].astype(str).apply(lambda x: (x if x != '22' else 'X')).unique().tolist()
+    ax0.set_yticks(chr_bars['y_ticks']+0.4)
+    ax0.set_yticklabels(chr_labels, fontsize = 6, rotation = 90, va = 'center')
+    ax0.set_ylim(0,len(gene_list)+len(pt_cn.append(pt_ltc_cn)['CHROM'].unique()))
     ax0.invert_yaxis()
+    ax0.tick_params(axis = 'y', pad = 35, left = False)
     
     ax0.xaxis.set_visible(False)
-    ax0.yaxis.set_visible(False)
+    ax0.yaxis.set_visible(True)
     ax0.spines['left'].set_visible(False)
     ax0.spines['bottom'].set_visible(False)
     
@@ -296,12 +325,12 @@ for pt in ['ID23']:
     else:
         pt_ltc_muts['x'] = 0
     
-    gene_list = cn['GENE'].unique().tolist()
+    gene_list = pt_cn.append(pt_ltc_cn).sort_values('CHROM')['GENE'].unique().tolist()
     gene_dict = dict(zip(gene_list, np.arange(len(gene_list))))
     
-    pt_ltc_cn['y'] = pt_ltc_cn.apply(lambda x: gene_dict.get(x['GENE']) + x["CHROM"]-(1 if x['CHROM'] < 18 else 2), axis=1)
+    pt_ltc_cn['y'] = pt_ltc_cn.apply(lambda x: gene_dict.get(x['GENE']) + x["CHROM"]-(missing_chr.get(x['CHROM']) + 1), axis=1)
     if len(pt_ltc_muts) > 0:
-        pt_ltc_muts['y'] = pt_ltc_muts.apply(lambda x: gene_dict.get(x['GENE']) + 0.4+ x["CHROM"]- (1 if x['CHROM'] < 18 else 2), axis=1)
+        pt_ltc_muts['y'] = pt_ltc_muts.apply(lambda x: gene_dict.get(x['GENE']) + 0.4 + x["CHROM"] - (missing_chr.get(x['CHROM']) + 1), axis=1)
     else:
         pt_ltc_muts['y'] = 0
     
@@ -317,7 +346,7 @@ for pt in ['ID23']:
     ax6.set_yticklabels(ylables, fontsize = 6)
     
     ax6.set_xlim(-0.5,len(pt_lowtc_samples)-0.5)
-    ax6.set_ylim(0,len(gene_list)+len(cn['CHROM'].unique()))
+    ax6.set_ylim(0,len(gene_list)+len(pt_cn.append(pt_ltc_cn)['CHROM'].unique()))
     ax6.invert_yaxis()
     
     ax6.tick_params(left = False, labelleft = False, bottom = False, labelbottom = False)
@@ -357,4 +386,4 @@ for pt in ['ID23']:
     # Save figure    
     # =============================================================================
     
-    plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/heterogeniety indexes/oncoprints/%i/%s_%s.pdf' % (int(tc_cutoff * 100), cohort, pt),bbox_inches='tight')
+    plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/heterogeniety indexes/oncoprints/%i/%s_%s.png' % (int(tc_cutoff * 100), cohort, pt),bbox_inches='tight', dpi = 500)
