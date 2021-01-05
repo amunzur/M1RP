@@ -10,12 +10,16 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import scipy.stats as stats
 import numpy as np
+import sys
 
 # =============================================================================
 # Import data
 # =============================================================================
 
-cohort = 'M1RP'
+if len(sys.argv) > 1:
+    cohort = sys.argv[1]
+else:
+    cohort = 'M1RP'
 
 mut_tc = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_mut_tc.tsv' % cohort, sep = '\t')
 snp_tc = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_snp_tc.tsv' % cohort, sep = '\t')

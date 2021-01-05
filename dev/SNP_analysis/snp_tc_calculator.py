@@ -27,8 +27,8 @@ if len(sys.argv) > 1:
     cohort = sys.argv[1]
     nascent = sys.argv[2]
 else:    
-    cohort = 'M1B'
-    nascent = True
+    cohort = 'M1RP'
+    nascent = False
 
 # =============================================================================
 # Helpers

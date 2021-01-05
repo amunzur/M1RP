@@ -10,14 +10,15 @@ import numpy as np
 import sys
 
 missing_gDNA = {'M1B':['ID22','ID27','ID1','ID31', 'ID19','ID21'],
-                'M1RP':[]}
+                'M1RP':['ID38','ID29','ID40','ID41','ID39']}
 
 if len(sys.argv) > 1:
     cohort = sys.argv[1]
     min_reads = int(sys.argv[2])
     lr_max = float(sys.argv[3])
+    min_truncal = 0.75
 else:
-    cohort = 'M1B'
+    cohort = 'M1RP'
     min_reads = 30
     lr_max = 0.3
     min_truncal = 0.75
