@@ -21,8 +21,8 @@ if len(sys.argv) > 1:
 else:
     cohort = 'M1RP'
 
-mut_tc = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_mut_tc.tsv' % cohort, sep = '\t')
-snp_tc = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_snp_tc.tsv' % cohort, sep = '\t')
+mut_tc = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/tumor_fraction/%s_mut_tc.tsv' % cohort, sep = '\t')
+snp_tc = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/tumor_fraction/%s_snp_tc.tsv' % cohort, sep = '\t')
 
 snp_tc = snp_tc.merge(mut_tc, on = ['Cohort','Patient ID','Sample ID'])
 snp_tc['Non-truncal flag'] = snp_tc['Non-truncal flag'].fillna(False)
@@ -115,10 +115,10 @@ ax4.set_xticks([1,2,3])
 ax4.set_xticklabels(['Group1','Group2','Group3'])
 
 plt.tight_layout()
-plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/tumor_fraction_calcuation/%s_snpTC_mutTC_byGroup.pdf' % cohort)
+plt.savefig('G:/Andy Murtha/Ghent/M1RP/prod/tumor_fraction_calcuation/%s_snpTC_mutTC_byGroup.pdf' % cohort)
 
 snp_tc = snp_tc[['Cohort','Patient ID','Sample ID','mut_TC','Chromosome','Position', 'Gene','Effect','Variant allele frequency','Read depth at variant position','Gene Log Ratio','Non-truncal flag','Group','snp_TC', 'median LOH VAF','Gene count','LOH gene count','Copy neutral gene count','Final tNGS_TC']]
 
 
-snp_tc.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/tumor_fraction/%s_tumor_fraction_final.tsv' % cohort, sep = '\t', index = None)
+snp_tc.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/tumor_fraction/%s_tumor_fraction_final.tsv' % cohort, sep = '\t', index = None)
 

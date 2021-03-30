@@ -130,14 +130,13 @@ pt_data['HasMetSample'] = pt_data['MLN'].apply(lambda x: 7 if x > 0 else 8)
 # Add complete sequencign data
 # =============================================================================
 
-pt_data['Sequencing complete'] = pt_data['Patient ID'].apply(lambda x: 8 if x in additional_samples['Patient ID'].tolist() else 7)
-pt_data['gDNA complete'] = pt_data['Patient ID'].apply(lambda x: 8 if x in ['ID38','ID29','ID40','ID41','ID39'] else 7)
+pt_data['WES complete'] = pt_data['Patient ID'].apply(lambda x: 8 if int(x.split('ID')[1]) in [9,20] or int(x.split('ID')[1]) >= 24 else 7)
 
 # =============================================================================
 # Sort data
 # =============================================================================
 
-pt_data = pt_data.sort_values(['gDNA complete','HasMetSample','High volume disease','RP', 'PB', 'MLN', 'cfDNA','Pelvic lymph nodes','Bone mets.','Other organ involvement','Age at Dx.','PSA at Dx.'], ascending = [True,True,True, False, False, False, False,True, True, False, False, False])
+pt_data = pt_data.sort_values(['WES complete','HasMetSample','High volume disease','RP', 'PB', 'MLN', 'cfDNA','Pelvic lymph nodes','Bone mets.','Other organ involvement','Age at Dx.','PSA at Dx.'], ascending = [True,True,True, False, False, False, False,True, True, False, False, False])
 tmp = pt_data.copy()
 pt_data = pt_data.drop(['PB', 'RP', 'MLN', 'cfDNA','HasMetSample'], axis = 1)
 pt_data = pt_data.set_index('Patient ID')
@@ -179,11 +178,7 @@ for x, pt in enumerate(pt_order):
         c = get_TC_color(s_tc)
         ggg = s_data.at[s, 'GGG']
         wes = s_data.at[s, 'Whole-exome sequencing'] == 'Completed'
-        if s in additional_samples['Sample ID'].tolist():
-            hatch = '///////'
-            c = 'white'
-        else:
-            hatch = None
+        hatch = None
         if 'PB' in s_type:
             if len(ggg) > 1:
                 ggg = '5'
@@ -256,7 +251,7 @@ for y, (index, row) in enumerate(pt_data.iterrows()):
     for x, col in enumerate(pt_data.columns.tolist()):
         ax1.bar(x,0.8, bottom = y, color = pt_summary_colors[int(pt_data.at[index,col])+1])
         
-ax1.set_yticks(np.arange(0.4,8.4,1))
+ax1.set_yticks(np.arange(0.4,7.4,1))
 ax1.set_yticklabels(pt_data.index.tolist(), fontsize = 8)
 
 ax1.invert_yaxis()
@@ -298,4 +293,4 @@ labels = [
 
 fig.legend(handles, labels, fontsize = 6, handlelength = 0.8, ncol = 3, loc = 'lower right')
 
-fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/summary/pt_sample_summary_fig.pdf')
+fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/pt_sample_summary_fig.pdf')

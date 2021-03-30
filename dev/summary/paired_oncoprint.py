@@ -17,8 +17,8 @@ from matplotlib.patches import Polygon
 gene_list = ['TP53', 'PTEN', 'RB1', 'SPOP', 'TMPRSS2', 'BRCA2', 'ATM', 'CDK12', 'NKX3-1',
              'CLU', 'NCOA2', 'MYC', 'PIK3CA']
 
-cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/copy number/final melted cna files/M1RP_allSamples_cna_curated.tsv', sep = '\t')
-mut = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/sandbox/mutations/final melted mutations/M1RP_mutations_inclDependent.tsv', sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy_number/final melted cna files/M1RP_cna.tsv', sep = '\t')
+mut = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/mutations/final melted mutations/M1RP_mutations_inclDependent.tsv', sep = '\t')
 tc = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
 samples = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=0')
 
@@ -83,16 +83,16 @@ mut = mut[mut['Sample ID'].isin(samples['Sample ID'].tolist())]
 cn = cn[cn['GENE'].isin(gene_list)]
 mut = mut[mut['GENE'].isin(gene_list)]
 
-cn['Curated_copy_num'] = cn['Curated_copy_num'].replace(dict.fromkeys([-1, -2], -1))
-cn['Curated_copy_num'] = cn['Curated_copy_num'].replace(dict.fromkeys([1, 2], 1))
+cn['Copy_num'] = cn['Copy_num'].replace(dict.fromkeys([-1, -2], -1))
+cn['Copy_num'] = cn['Copy_num'].replace(dict.fromkeys([1, 2], 1))
 
-cn_count = cn[['Patient ID','GENE','Curated_copy_num']].copy()
-cn_count = cn_count[cn_count['Curated_copy_num'] != 0]
+cn_count = cn[['Patient ID','GENE','Copy_num']].copy()
+cn_count = cn_count[cn_count['Copy_num'] != 0]
 cn_count['Count'] = 1
-cn_count = cn_count.groupby(['Patient ID','GENE','Curated_copy_num']).count().reset_index()
+cn_count = cn_count.groupby(['Patient ID','GENE','Copy_num']).count().reset_index()
 cn_count = cn_count[cn_count['Count'] >= 2]
 
-cn = cn.merge(cn_count, on = ['Patient ID','GENE','Curated_copy_num'])
+cn = cn.merge(cn_count, on = ['Patient ID','GENE','Copy_num'])
 
 # =============================================================================
 # Sort
@@ -111,7 +111,7 @@ mut['y'] = mut['GENE'].map(ys)
 # Assign color to muts and cn
 # =============================================================================
 
-cn['color'] = cn['Curated_copy_num'].map({-1:'#9CC5E9',0:'#efefef',1:'#F59496'})
+cn['color'] = cn['Copy_num'].map({-1:'#9CC5E9',0:'#efefef',1:'#F59496'})
 mut['color'] = mut['EFFECT'].str.split(' ').str[0].map({'Missense':'#79B443',
                                                         'Frameshift':'#FFC907',
                                                         'Stopgain':'#FFC907',
@@ -136,10 +136,10 @@ del mut, cn, tc, samples, met_count, pri_count
 # 
 # =============================================================================
 
-cn_primary = cn_primary[['Patient ID','GENE','Curated_copy_num','y','color']]
+cn_primary = cn_primary[['Patient ID','GENE','Copy_num','y','color']]
 cn_primary = cn_primary.drop_duplicates()
 
-cn_met = cn_met[['Patient ID','GENE','Curated_copy_num','y','color']]
+cn_met = cn_met[['Patient ID','GENE','Copy_num','y','color']]
 cn_met = cn_met.drop_duplicates()
 
 # =============================================================================
@@ -208,11 +208,11 @@ ax.scatter(mut_met['x'], mut_met['y']+0.4, c = mut_met['color'], lw = 0, zorder 
 ax.set_xticks(np.array(list(xs.values()))+0.5)
 ax.set_yticks(np.array(list(ys.values()))+0.4)
 
-ax.set_xticklabels(patients)
+ax.set_xticklabels(patients, rotation = 90)
 ax.set_yticklabels(gene_list)
 
 ax.set_ylim(-0.02, len(gene_list))
 ax.set_xlim(-0.52, len(patients)*factor-0.5)
 
 fig.tight_layout()
-plt.savefig('G:/Andy Murtha/Ghent/M1RP/dev/summary/paired_oncoprint.pdf')
+plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/summary/paired_oncoprint.pdf')
