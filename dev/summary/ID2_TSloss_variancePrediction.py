@@ -84,7 +84,7 @@ for y in np.arange(0,43,1):
             pred_hetDel = math.log2(2-sample_tc)-1
             
             sample_cn['No change'] = sample_cn[sample]**2
-            no_copy_change.append(sample_cn['No change'].sum() / len(sample_cn))
+            no_copy_change.append(sppoample_cn['No change'].sum() / len(sample_cn))
             
             sample_cn['Hetz del'] = (sample_cn[sample] - pred_hetDel)**2
             hetz_del.append(sample_cn['Hetz del'].sum() / len(sample_cn))

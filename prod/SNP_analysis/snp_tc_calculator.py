@@ -57,7 +57,7 @@ def create_depth_std(gl, window_size):
 # =============================================================================
 
 snp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/hetz_snps/ghent_%s_hetz_snps.vcf' % cohort, sep = '\t')
-cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy_number/final melted cna files/%s_FFPE_cna.tsv' % cohort, sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy_number/final melted cna files/M1RP_cna.tsv', sep = '\t')
 col = 'Copy_num'
 cn_call = -1
 

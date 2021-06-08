@@ -45,9 +45,9 @@ muts_color = {'Missense':'#79B443',
 
 def get_tc_color(x):
     if x == 0:
-        return '#ffcccc';
+        return 'lightgrey';
     elif x < 0.2:
-        return '#ff6666'
+        return 'grey'
     else:
         return '#ff0000'
 
@@ -117,6 +117,8 @@ muts = keepCodingMutations(muts)
 
 cn = cn.set_index(['Sample ID','GENE'])
 
+# cn['Copy_num'] = cn['Copy_num'].replace({2:1,-2:-1})
+
 # =============================================================================
 # Create matrix
 # =============================================================================
@@ -155,7 +157,7 @@ matrix['x'] = np.arange(len(matrix))
 # =============================================================================
 
 for pt in matrix['order'].unique().tolist():
-    matrix.loc[matrix['order'] > pt, 'x'] += 5
+    matrix.loc[matrix['order'] > pt, 'x'] += 4
     
 # =============================================================================
 # Get x tick coordinates
@@ -181,7 +183,7 @@ muts['EFFECT'] = muts['EFFECT'].str.split(' ').str[0]
 # Create plot
 # =============================================================================
 
-fig,ax = plt.subplots(figsize = (7.5,1.5))
+fig,ax = plt.subplots(figsize = (7,1.5))
 
 # =============================================================================
 # Plot sample type
@@ -220,18 +222,21 @@ ax.invert_yaxis()
 
 ax.set_xticks(xticks)
 if n == 1:
-    ax.set_xticklabels(s1, fontsize = 6)
+    ax.set_xticklabels(s1, fontsize = 6, ha = 'center')
 elif n == 2:
-    ax.set_xticklabels(s2, fontsize = 6)
+    ax.set_xticklabels(s2, fontsize = 6, ha = 'center')
 
 # X axis alteration
 # ax.set_xlabel('Sample', fontsize = 8)
 ax.set_xlim(-0.4, max(matrix.index))
 ax.tick_params(labelbottom = True, bottom = False, left = False)
+ax.tick_params(axis = 'x', pad = -2)
 
 ax.spines['bottom'].set_visible(False)
 ax.spines['left'].set_visible(False)
 plt.tight_layout()
+
+fig.subplots_adjust(left = 0.1, right = 0.99)
 
 plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/Oncoprints/CIHR_full_oncoprint_%i.pdf' % n)
 plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/Oncoprints/CIHR_full_oncoprint_%i.png' % n, dpi = 300)

@@ -42,6 +42,7 @@ cn = cn.append(cn_tmp, ignore_index = True)
 del cn_tmp
 
 muts.loc[muts['GENE'] == 'BIVM-ERCC5;ERCC5', 'GENE'] = 'ERCC5'
+called.loc[called['GENE'] == 'BIVM-ERCC5;ERCC5', 'GENE'] = 'ERCC5'
 
 # =============================================================================
 # Merge log_ratio onto mutations
@@ -77,8 +78,16 @@ muts.loc[muts['CHROM'].isin(['chrX','chrY']), 'Allosome_flag'] = False
 # Create % column and flag mutations in less that 75% of patient matched samples
 # =============================================================================
 
-sample_counts = called[['Sample ID','Patient ID']].drop_duplicates().groupby('Patient ID').count().reset_index()
-mutation_counts = called.groupby(['Patient ID','CHROM','POSITION','GENE','EFFECT']).count()[['Cohort']].reset_index()
+snp_tc_pos = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/tumor_fraction/%s_snp_tc.tsv' % cohort, sep = '\t')
+
+snp_tc_pos['Patient ID'] = snp_tc_pos['Sample ID'].str.split('_').str[1]
+snp_tc_pos = snp_tc_pos[snp_tc_pos['snp_TC'].fillna(0) > 0]
+snp_tc_pos = snp_tc_pos[['Sample ID','Patient ID']]
+
+sample_counts = called[['Sample ID','Patient ID']].append(snp_tc_pos, ignore_index = True).drop_duplicates()
+
+sample_counts = sample_counts.groupby('Patient ID').count().reset_index()
+mutation_counts = called.groupby(['Patient ID','CHROM','POSITION','GENE', 'EFFECT']).count()[['Cohort']].reset_index()
 
 mutation_counts = mutation_counts.merge(sample_counts, on = 'Patient ID', how = 'left')
 
@@ -90,8 +99,8 @@ mutation_counts = mutation_counts.drop(['Mutation count','Sample count'], axis =
 
 muts = muts.merge(mutation_counts, on = ['Patient ID','CHROM','POSITION','GENE','EFFECT'], how = 'left' )
 
-muts['Non-truncal flag'] = True
-muts.loc[muts['Percent'] < min_truncal, 'Non-truncal flag'] = False
+muts['Non-truncal flag'] = False
+muts.loc[muts['Percent'] < min_truncal, 'Non-truncal flag'] = True
 
 # =============================================================================
 # Calculate muts for each mutation
@@ -104,7 +113,7 @@ muts.loc[muts['Allosome_flag'] == False, 'mut_TC'] = muts['Allele_frequency']
 # Sort mutations based on sample id, flags, tc. Merge in samples with no mutations
 # =============================================================================
 
-muts = muts.sort_values(['Sample ID','Lr_flag','Allosome_flag','Depth_flag','Non-truncal flag','mut_TC'], ascending = [True,False,False,False,False,False])
+muts = muts.sort_values(['Sample ID','Lr_flag','Allosome_flag','Depth_flag','Non-truncal flag','mut_TC'], ascending = [True,False,False,False,True,False])
 
 muts = muts[['Cohort', 'Patient ID', 'Sample ID','mut_TC', 'CHROM', 'POSITION', 'REF', 'ALT','GENE', 'EFFECT', 'Allele_frequency', 'Read_depth', 'NOTES', 'Log_ratio', 'Allosome_flag','Depth_flag','Lr_flag','Non-truncal flag']]
 

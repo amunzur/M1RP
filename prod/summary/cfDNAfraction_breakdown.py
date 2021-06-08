@@ -113,7 +113,7 @@ ax3.text(0.75, 0.95, "Mann-Whitney U: One sided\np = %.2f" % p[1])
 
 fig.tight_layout()
 
-fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/cfDNAfraction_breakdown.pdf')
+# fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/cfDNAfraction_breakdown.pdf')
 
 # =============================================================================
 # cfDNA by scatter and PSA
@@ -130,7 +130,7 @@ r = stats.linregress(tc['Serum PSA at diagnosis'], tc['Final tNGS_TC'])[2]
 ax.text(150,0.8,"r=%.2f" % r)
 
 fig.tight_layout()
-fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/cfDNAfractionVsPSA.pdf')
+# fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/cfDNAfractionVsPSA.pdf')
 
 # =============================================================================
 # Plot waterfall plot for time from ADT to CRPC colored by positive ctDNA or not
@@ -161,4 +161,4 @@ labels = ['Baseline ctDNA positive','Baseline ctDNA negative']
 ax.legend(handles, labels, handlelength = 0.8)
 
 fig.tight_layout()
-fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/cfDNAfractionVsTimeToCRPC.pdf')
+# fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/cfDNAfractionVsTimeToCRPC.pdf')

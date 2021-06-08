@@ -81,7 +81,7 @@ muts = muts.sort_values(['Sample Category','Count','Final tNGS_TC'], ascending =
 # Create figure
 # =============================================================================
 
-fig,ax = plt.subplots(figsize = (1.9,1.6))
+fig,ax = plt.subplots(figsize = (2.35,2.15))
 
 # =============================================================================
 # Plot 
@@ -98,7 +98,7 @@ ax.set_xlim(-0.6, len(muts['Sample ID'].drop_duplicates())-0.4)
 ax.set_ylim(-0.4,0.4)
 ax.set_ylabel('Relative VAF', fontsize = 6, labelpad = 0)
 
-fig.legend([Line2D([0],[0], marker = 'o', lw = 0, markeredgewidth=0, markerfacecolor=x, markersize = 4) for x in list(color_dict.values())], [x for x in list(color_dict.keys())], fontsize = 6, ncol = 2)
+fig.legend([Line2D([0],[0], marker = 'o', lw = 0, markeredgewidth=0, markerfacecolor=x, markersize = 4) for x in list(color_dict.values())], [x for x in [" ".join(y) for y in list(color_dict.keys())]], fontsize = 6, ncol = 2, columnspacing = 1.6, handletextpad = 0.5)
 
 ax.tick_params(labelsize = 6, bottom = False, pad = 0, size = 3)
 

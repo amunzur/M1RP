@@ -168,7 +168,7 @@ for index,row in groups.iterrows():
 ax.set_yticks(ys)
 ax2.set_yticks(ys)
 ax3.set_yticks(ys)
-ax.set_yticklabels(['Mutation-based TC','SNP-based TC','Non-truncal\nmut. TC','TC-neg.','NT'], rotation = 90, va = 'center')
+ax.set_yticklabels(['Mutation-based TC','SNP-based TC','Non-truncal\nmut. TC','TC-\nneg.','NT'], rotation = 90, va = 'center')
 ax1.set_ylim(-1,max(s_order.values()))
     
 ax.tick_params(left = False,bottom = False, labelbottom = False)
@@ -183,5 +183,8 @@ ax.spines['bottom'].set_visible(False)
 fig.tight_layout()
 fig.subplots_adjust(wspace = 0)
 
-fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/summary/SNP_CN_TCvaf_analysis.pdf')
-fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/summary/SNP_CN_TCvaf_analysis.png', dpi = 500)
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/summary/SNP_CN_TCvaf_analysis.pdf')
+
+
+# fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/SNP_CN_TCvaf_analysis.png', dpi = 500)
+# fig.savefig('G:/Andy Murtha/Ghent/M1RP/dev/summary/SNP_CN_TCvaf_analysis.pdf')

@@ -21,12 +21,16 @@ cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy
 mut = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/mutations/final melted mutations/M1RP_mutations_inclDependent.tsv', sep = '\t')
 tc = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
 samples = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=0')
+gl = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/mutations/final melted mutations/M1RP_germline_mutations.tsv', sep = '\t')
+
+gl['NOTES'] = gl['NOTES'].astype(str)
 
 # =============================================================================
 # Keep coding mutations
 # =============================================================================
 
 mut = mut[mut['EFFECT'].str.split(' ').str[0].isin(['Missense','Frameshift','Stopgain','Splice'])]
+gl = gl[gl['NOTES'].str.contains('ClinVar:Pathogenic.')]
 
 # =============================================================================
 # Keep TC > 20.
@@ -66,7 +70,7 @@ pri_count = pri_count.groupby('Patient ID').count().reset_index()
 samples = samples.merge(pri_count, on = 'Patient ID', how = 'left')
 samples['primary_count'] = samples['primary_count'].fillna(0)
 
-samples = samples[(samples['met_count'] >= 2)&(samples['primary_count'] >= 2)]
+samples = samples[(samples['met_count'] >= 1)&(samples['primary_count'] >= 1)]
 patients = samples['Patient ID'].unique().tolist()
 
 # =============================================================================
@@ -95,8 +99,40 @@ cn_count = cn_count[cn_count['Count'] >= 2]
 cn = cn.merge(cn_count, on = ['Patient ID','GENE','Copy_num'])
 
 # =============================================================================
+# Add germline variants to muts
+# =============================================================================
+
+cols = ['Cohort', 'Patient ID', 'Sample ID', 'CHROM', 'POSITION', 'REF', 'ALT',
+       'GENE', 'EFFECT', 'Allele_frequency', 'Read_depth', 'NOTES',
+       'Independent', 'Final tNGS_TC', 'Clonal']
+
+append_df = pd.DataFrame(columns = cols)
+gl = gl[gl['Patient ID'].isin(patients)]
+for index, row in gl.iterrows():
+    pt_samples = tc[tc['Patient ID'] == row['Patient ID']]['Sample ID'].tolist()
+    tmp = pd.DataFrame({'Cohort':['M1RP']*len(pt_samples),'Patient ID':[row['Patient ID']]*len(pt_samples),'Sample ID':pt_samples, 'CHROM':[row['CHROM']]*len(pt_samples), 'POSITION':[row['POSITION']]*len(pt_samples), 'REF':[row['REF']]*len(pt_samples), 'ALT':[row['ALT']]*len(pt_samples), 'GENE':[row['GENE']]*len(pt_samples), 'EFFECT':[row['EFFECT']]*len(pt_samples),'Allele_frequency':[0]*len(pt_samples),'Read_depth':[0]*len(pt_samples),'NOTES':[row['NOTES']]*len(pt_samples),'Independent':[True]*len(pt_samples),'Final tNGS_TC':[0]*len(pt_samples),'Clonal':[True]*len(pt_samples),'Germline':['*']*len(pt_samples)})
+    append_df = append_df.append(tmp, ignore_index=True)
+    
+mut['Germline'] = 's'
+mut = mut.append(append_df, ignore_index=True)
+
+# =============================================================================
+# Calculate offset
+# =============================================================================
+
+mut_count = mut.drop_duplicates(['Patient ID','GENE','EFFECT']).groupby(['Patient ID','GENE']).count().reset_index()
+mut_count = mut_count[mut_count['CHROM'] >= 2]
+
+mut['Offset'] = 0
+mut.loc[mut['Sample ID'].isin(mut_count['Sample ID'].tolist()), 'Offset'] = 0.3
+
+mut_count = mut_count.drop_duplicates(['Patient ID','GENE'])
+mut.loc[mut['Sample ID'].isin(mut_count['Sample ID'].tolist()), 'Offset'] = -0.3
+
+# =============================================================================
 # Sort
 # =============================================================================
+
 
 
 # =============================================================================
@@ -169,7 +205,7 @@ cn_primary.loc[cn_primary['Count'] == 2, 'color'] = 'white'
 # Create plot
 # =============================================================================
 
-fig,ax = plt.subplots()
+fig,ax = plt.subplots(figsize = (7.5,5))
 
 # =============================================================================
 # plot cna data
@@ -198,8 +234,10 @@ for index, row in cn_both.iterrows():
 # Plot mutation data
 # =============================================================================
 
-ax.scatter(mut_primary['x'], mut_primary['y']+0.4, c = mut_primary['color'], lw = 0, zorder = 100, marker = 's')
-ax.scatter(mut_met['x'], mut_met['y']+0.4, c = mut_met['color'], lw = 0, zorder = 100, marker = 's')
+for index, row in mut_primary.iterrows():
+    ax.scatter(row['x']+row['Offset'], row['y']+0.4+row['Offset'], c = row['color'], lw = 0, zorder = 100, marker = row['Germline'], s = 8)
+for index, row in mut_primary.iterrows():
+    ax.scatter(row['x']+row['Offset'], row['y']+0.4+row['Offset'], c = row['color'], lw = 0, zorder = 100, marker = row['Germline'], s = 8)
 
 # =============================================================================
 # Label x and y axis
