@@ -244,7 +244,7 @@ cn_primary.loc[cn_primary['Count'] == 2, 'color'] = 'white'
 # Create plot
 # =============================================================================
 
-fig,ax = plt.subplots(figsize = (6.5,3.75))
+fig,ax = plt.subplots(figsize = (5.625,2.75))
 
 # =============================================================================
 # plot cna data
@@ -283,11 +283,11 @@ germline_p = mut_primary[mut_primary['Somatic'] == False]
 somatic_m = mut_met[mut_met['Somatic'] == True]
 germline_m = mut_met[mut_met['Somatic'] == False]
 
-ax.scatter(somatic_p['x'], somatic_p['y']+0.4, c = somatic_p['color'], lw = 0, zorder = 1000, marker = 's', s = 15)
-ax.scatter(somatic_m['x'], somatic_m['y']+0.4, c = somatic_m['color'], lw = 0, zorder = 1000, marker = 's', s = 15)
+ax.scatter(somatic_p['x'], somatic_p['y']+0.4, c = somatic_p['color'], lw = 0, zorder = 1000, marker = 's', s = 8)
+ax.scatter(somatic_m['x'], somatic_m['y']+0.4, c = somatic_m['color'], lw = 0, zorder = 1000, marker = 's', s = 8)
 
-ax.scatter(germline_p['x'], germline_p['y']+0.4, c = germline_p['color'], lw = 0, zorder = 1000, marker = '*', s = 25)
-ax.scatter(germline_m['x'], germline_m['y']+0.4, c = germline_m['color'], lw = 0, zorder = 1000, marker = '*', s = 25)
+ax.scatter(germline_p['x'], germline_p['y']+0.4, c = germline_p['color'], lw = 0, zorder = 1000, marker = '*', s = 22)
+ax.scatter(germline_m['x'], germline_m['y']+0.4, c = germline_m['color'], lw = 0, zorder = 1000, marker = '*', s = 22)
 
 # =============================================================================
 # Label x and y axis
@@ -301,6 +301,11 @@ ax.set_yticklabels(gene_list[::-1], fontsize = 6)
 
 ax.set_ylim(-0.02, len(gene_list))
 ax.set_xlim(-0.52, len(patients)*factor-0.5)
+
+ax.spines['left'].set_visible(False)
+ax.spines['bottom'].set_visible(False)
+
+ax.tick_params(left = False, bottom = False, pad = 0)
 
 # ax.invert_yaxis()
 

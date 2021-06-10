@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 mut_genes = ['TP53','FOXA1','BRCA2','SPOP','PTEN','RB1']
-cn_genes = ['TP53','PTEN','RB1','BRCA2','NKX3-1']
+cn_genes = ['TP53','PTEN','RB1','BRCA2','NKX3-1','CHD1']
 
 effect_dict = {'Missense':'Missense', 'Stopgain':'Truncating', 'Non-frameshift':'Non-frameshift', 'Frameshift':'Truncating', 'Splice':'Truncating'}
 
