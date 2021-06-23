@@ -47,7 +47,9 @@ gl = gl[gl['NOTES'].str.contains('ClinVar:Pathogenic.')]
 # Loop over patients and create an oncoprint
 # =============================================================================
 
-for pt in ['ID33']:
+pts = ['ID%i' % (i+1) for i in np.arange(43)]
+
+for pt in pts:
     pt_tc = tc[tc['Patient ID'] == pt].copy()
     pt_muts = muts[muts['Patient ID'] == pt].copy()
     pt_cn = cn[cn['Patient ID'] == pt].copy()
@@ -69,9 +71,9 @@ for pt in ['ID33']:
     # Add pathogenic germline variant to the mutation file    
     # =============================================================================
     
-    pt_samples = pt_tc['Sample ID'].tolist()
-    for index, row in pt_gl.iterrows():
-        tmp_df = pd.DataFrame({'Sample ID': pt_samples, }))
+    # pt_samples = pt_tc['Sample ID'].tolist()
+    # for index, row in pt_gl.iterrows():
+    #     tmp_df = pd.DataFrame({'Sample ID': pt_samples, }))
     
     # =============================================================================
     # Add mutation color    
@@ -137,4 +139,4 @@ for pt in ['ID33']:
     
     
     
-    fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/Oncoprints/Patient oncoprints/%s.pdf' % pt)
+    fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Oncoprints/Patient oncoprints/%s.pdf' % pt)

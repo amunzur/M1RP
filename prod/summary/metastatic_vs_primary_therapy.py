@@ -163,7 +163,7 @@ cn_m['x'] = cn_m['GENE'].map(x_dict)+0.4
 # Start plotting
 # =============================================================================
 
-fig,ax = plt.subplots()
+fig,ax = plt.subplots(figsize = (3,2.5))
 
 # =============================================================================
 # Copy number
@@ -261,7 +261,7 @@ mut_freq_m.columns = ['GENE','EFFECT','Count']
 mut_freq_p['Total'] = p_total
 mut_freq_p['Frequency'] = mut_freq_p['Count'] / mut_freq_p['Total']
 
-mut_freq_m['Total'] = p_total
+mut_freq_m['Total'] = m_total
 mut_freq_m['Frequency'] = mut_freq_m['Count'] / mut_freq_m['Total']
 
 # =============================================================================
@@ -301,11 +301,14 @@ for effect in list(mut_colors.keys()):
     bottom = bottom.drop('Frequency', axis = 1)
     
 ax.set_xticks(np.arange(0.2,len(mut_genes)+len(cn_genes),1))
-ax.set_xticklabels(mut_genes+cn_genes, rotation = 90)
+ax.set_xticklabels(mut_genes+cn_genes, rotation = 90, fontsize = 6)
 
-ax.set_ylabel('Alteration frequency')
-ax.set_ylim(0,0.8)
+ax.set_ylabel('Alteration frequency', fontsize = 6)
+ax.set_ylim(0,0.7)
+
+ax.tick_params(labelsize = 6, bottom = False)
 
 fig.tight_layout()
+fig.subplots_adjust(left = 0.13, right = 0.98, top = 0.96, bottom = 0.22)
 
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/summary/AlterationFrequencyByMetVsPri.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/AlterationFrequencyByMetVsPri.pdf')
