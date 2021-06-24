@@ -67,7 +67,7 @@ def get_jsi(s1, s2, muts):
     s_muts.loc[(s_muts[s1+'_af'] > 0) & (s_muts[s1+'_mutant_reads'] >= 3), s1+'_called'] = True
     s_muts.loc[(s_muts[s2+'_af'] > 0) & (s_muts[s2+'_mutant_reads'] >= 3), s2+'_called'] = True
     # Remove rows where expected mutant reads is < 3 in either sample
-    s_muts = s_muts[(s_muts[s1+'_expected_mReads'] >= 3)&(s_muts[s2+'_expected_mReads'] >= 3)]
+    s_muts = s_muts[((s_muts[s1+'_expected_mReads'] >= 3)&(s_muts[s2+'_expected_mReads'] >= 3))|((s_muts[s1+'_called'] == True)&(s_muts[s2+'_called'] == True))]
     # Return in no mutations are present
     if len(s_muts) == 0:
         return (np.nan, 0)
@@ -80,12 +80,14 @@ matrix = pd.DataFrame(index = samples, columns = samples)
 matrix_n = pd.DataFrame(index = samples, columns = samples)
 
 def func(s1, s2):
+    if (s1 == 'M1RP_ID19_RP7' and s2 == 'M1RP_ID19_cfDNA_2017Jan13') or (s1 == 'M1RP_ID19_cfDNA_2017Jan13' and s2 == 'M1RP_ID19_RP7'):
+        s1 = s1
     return get_jsi(s1, s2, muts)
 
 results = [func(s1,s2) for (s1,s2) in it.combinations_with_replacement(samples, 2)]
 
 n_cores = mp.cpu_count() 
-results = Parallel(n_jobs=n_cores)(delayed(func)(s1,s2) for (s1,s2) in it.combinations_with_replacement(samples, 2))
+# results = Parallel(n_jobs=n_cores)(delayed(func)(s1,s2) for (s1,s2) in it.combinations_with_replacement(samples, 2))
 
 for (s1,s2),r in zip(it.combinations_with_replacement(samples, 2), results):
     matrix.at[s1,s2] = r[0]

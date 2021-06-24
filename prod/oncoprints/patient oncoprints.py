@@ -22,7 +22,11 @@ mut_effect_dict = {'Missense':'#79B443',
               'Frameshift':'#FFC907',
               'Stopgain':'#FFC907',
               'Non-frameshift':'#BD4398',
-              'Splice':'#FFC907'}
+              'Splice':'#FFC907',
+              "5'-UTR":'darkgrey',
+              'Intronic':'darkgrey',
+              'Synonymous':'darkgrey',
+              "3'-UTR":'darkgrey'}
 
 # =============================================================================
 # Import TC, mutation, and CN data
@@ -37,7 +41,7 @@ tc.columns = tc.iloc[0]
 tc = tc.drop(tc.index[0])
 tc['Final tNGS_TC'] = tc['Final tNGS_TC'].astype(float)
 
-muts = keepCodingMutations(muts)
+# muts = keepCodingMutations(muts)
 muts = muts[muts['GENE'].isin(cn['GENE'].unique().tolist())]
 
 gl['NOTES'] = gl['NOTES'].fillna('')

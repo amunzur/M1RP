@@ -66,7 +66,10 @@ sim = sim[(sim['Final tNGS_TC_x'] > 0.2)&(sim['Final tNGS_TC_y'] > 0.2)]
 sim = sim[sim['p1'] == sim['p2']]
 sim = sim[(~sim['p_corr'].isna())&(~sim['JSI'].isna())]
 
+secondary_tumors = ['M1RP_ID19_cfDNA_2017Jan13','M1RP_ID30_UCC']
+
 sim = sim[sim['p1'] != 'ID8']
+sim = sim[(~sim['s1'].isin(secondary_tumors))&(~sim's2'].isin(secondary_tumors))]
 
 # =============================================================================
 # Plot scatter
