@@ -294,4 +294,4 @@ labels = [
 fig.legend(handles, labels, fontsize = 6, handlelength = 0.8, ncol = 4, loc = 'lower right')
 
 fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/pt_sample_summary_fig.pdf')
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/summary/pt_sample_summary_fig.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/pt_sample_summary_fig.pdf')

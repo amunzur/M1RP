@@ -290,7 +290,7 @@ ax.tick_params(labelsize = 6)
 
 plt.tight_layout()
 
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/summary/AlterationFrequencyByRiskGroup.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/AlterationFrequencyByRiskGroup.pdf')
 
 # =============================================================================
 # STATS FUNNNNNNNN

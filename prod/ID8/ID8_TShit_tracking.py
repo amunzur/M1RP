@@ -284,4 +284,4 @@ axs[-1][1].tick_params(labelsize = 6)
     
 fig.tight_layout()
 
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/Patient specific/%s/%s_TStracking.pdf' % (pt, pt))
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Patient specific/%s/%s_TStracking.pdf' % (pt, pt))

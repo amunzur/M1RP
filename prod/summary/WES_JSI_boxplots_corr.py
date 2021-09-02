@@ -38,7 +38,11 @@ sim = sim.merge(tc[['Sample ID','Final tNGS_TC']], left_on = 's2', right_on = 'S
 
 sim = sim[(sim['Final tNGS_TC_x'] > 0.2)&(sim['Final tNGS_TC_y'] > 0.2)]
 
-sim.loc[sim['JSI'] < 0, 'JSI'] = 0
+sim = sim[~sim['p1'].isin(['ID8','ID9','ID20'])]
+
+sim = sim[(sim['s1'] != 'M1RP_ID19_cfDNA_2017Jan13')&(sim['s2'] != 'M1RP_ID19_cfDNA_2017Jan13')]
+sim = sim[(sim['s1'] != 'M1RP_ID30_UCC')&(sim['s2'] != 'M1RP_ID30_UCC')]
+sim = sim[(sim['s1'] != 'M1RP_ID30_RP3')&(sim['s2'] != 'M1RP_ID30_RP3')]
 
 # =============================================================================
 # Get boxplots for same patient vs other patient
@@ -47,10 +51,6 @@ sim.loc[sim['JSI'] < 0, 'JSI'] = 0
 same = sim[sim['p1'] == sim['p2']].copy()
 diff = sim[sim['p1'] != sim['p2']].copy()
 
-secondary_tumors = ['M1RP_ID19_cfDNA_2017Jan13','M1RP_ID30_UCC']
-
-same = same[(same['p1']!='ID8')&(same['p2']!='ID8')]
-same = same[(~same['s1'].isin(secondary_tumors))&(~same['s2'].isin(secondary_tumors))]
 
 same['x'] = same['p1'].apply(lambda x: 1+np.random.uniform(-0.1,0.1))
 diff['x'] = diff['p1'].apply(lambda x: 2+np.random.uniform(-0.1,0.1))
@@ -69,6 +69,7 @@ ax.tick_params(labelsize = 6)
 fig.tight_layout()
 
 plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/wes_snv_JSI_boxplots_samePt_diffPt.pdf')
+plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/wes_snv_JSI_boxplots_samePt_diffPt.png')
 
 
 # =============================================================================
@@ -79,8 +80,6 @@ t_dict = {'RP':'Primary', 'MLN':'Metastatic', 'cfDNA':'cfDNA', 'PB':'Primary', '
 
 same['t1'] = same['s1'].str.split('_').str[2].str.strip(string.digits).map(t_dict)
 same['t2'] = same['s2'].str.split('_').str[2].str.strip(string.digits).map(t_dict)
-
-same = same[(same['p1']!='ID8')&(same['p2']!='ID8')]
 
 # =============================================================================
 # Plot primary primary, met_primary, met_met, cfDNA_primary, cfDNA_met
@@ -121,3 +120,4 @@ ax.tick_params(labelsize = 6)
 plt.tight_layout()
 
 plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/wes_snv_JSI_boxplots_bySite.pdf')
+plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/wes_snv_JSI_boxplots_bySite.png')

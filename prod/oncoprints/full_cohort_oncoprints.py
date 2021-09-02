@@ -52,7 +52,7 @@ def get_tc_color(x):
         return '#ff0000'
 
 
-n = 2
+n = 1
 
 s1 = ['ID3','ID43','ID10','ID14','ID15','ID19','ID21','ID23','ID33','ID38','ID40', 'ID1', 'ID4', 'ID5','ID6', 'ID7', 'ID9', 'ID16', 'ID17', 'ID18', 'ID20', 'ID22']
 
@@ -238,5 +238,5 @@ plt.tight_layout()
 
 fig.subplots_adjust(left = 0.1, right = 0.99)
 
-plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/Oncoprints/CIHR_full_oncoprint_%i.pdf' % n)
-plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/Oncoprints/CIHR_full_oncoprint_%i.png' % n, dpi = 300)
+plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Oncoprints/CIHR_full_oncoprint_%i.pdf' % n)
+plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Oncoprints/CIHR_full_oncoprint_%i.png' % n, dpi = 300)

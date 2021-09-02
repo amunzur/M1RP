@@ -299,4 +299,4 @@ ax.tick_params(left = False, bottom = False, pad = 0)
 
 plt.tight_layout()
 
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/Oncoprints/aggregate_oncoprint.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Oncoprints/aggregate_oncoprint.pdf')

@@ -45,7 +45,7 @@ ts= ["TP53", "RB1", "PTEN", "BRCA2", "SPOP"]
 cn_genes= ["TP53", "RB1", "PTEN", "BRCA2", "AR"]
 
 # Dictionaries to order the cohorts and genes on the barchart
-cohort_dict = {"Primary TCGA PanCancer Atlas": 3, "SU2C mCRPC": 2, "M1RP de novo CRPC": 1}
+cohort_dict = {"Primary TCGA PanCancer Atlas": 1, "SU2C mCRPC": 3, "MSK mCSPC":2, "M1RP de novo CSPC": 0}
 
 gene_dict = {"SPOP\nmut": 3, "FOXA1\nmut": 1, "TP53\nmut": 0,  "PTEN\nmut": 2,
              "RB1\nmut": 4, "BRCA2\nmut": 5, "AR\nmut": 7, 'CDK12\nmut':6,
@@ -64,6 +64,9 @@ clinical_muts =["Frameshift", "Stopgain", "Splice", "indel", "Missense"]
 tcga_mut_path = "C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/cBioportal/prostate_adenocarcinoma_tcga_pancancer_atlas_mutations.txt"
 tcga_cn_path = "C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/cBioportal/prostate_adenocarcinoma_tcga_pancancer_atlas_copy_number.txt"
 
+msk_mut_path = 'C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/cBioportal/msk_mcspc_mutations.txt'
+msk_cn_path = 'C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/cBioportal/msk_mcspc_copy_number.txt'
+
 su2c_mut_path = "C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/cBioportal/SU2C_2019_mutations.txt"
 su2c_cn_path = "C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/cBioportal/SU2C_2019_copy_number.txt"
 
@@ -81,13 +84,15 @@ m1_snvs = pd.read_csv(snv_path, sep='\t', header=[0])
 m1_cnvs = pd.read_csv(cnv_path, sep='\t', header=[0])
 
 # Load cbioportal data
-tcga_snv = pd.read_csv (tcga_mut_path, sep='\t', header=[0])
-tcga_cn = pd.read_csv (tcga_cn_path, sep='\t', header=[0])
-su_snv = pd.read_csv (su2c_mut_path, sep='\t', header=[0])
-su_cn = pd.read_csv (su2c_cn_path, sep='\t', header=[0])
+tcga_snv = pd.read_csv(tcga_mut_path, sep='\t', header=[0])
+tcga_cn = pd.read_csv(tcga_cn_path, sep='\t', header=[0])
+su_snv = pd.read_csv(su2c_mut_path, sep='\t', header=[0])
+su_cn = pd.read_csv(su2c_cn_path, sep='\t', header=[0])
+msk_snv = pd.read_csv(msk_mut_path, sep = '\t', header=[0])
+msk_cn = pd.read_csv(msk_cn_path, sep='\t', header=[0])
 
 #Delete path variables
-del tcga_mut_path, tcga_cn_path, su2c_mut_path, su2c_cn_path, snv_path, cnv_path
+del tcga_mut_path, tcga_cn_path, su2c_mut_path, su2c_cn_path, snv_path, cnv_path, msk_cn_path, msk_mut_path
 
 # Get total number of patients in M1RP
 pt_num = len(m1_cnvs['Patient ID'].unique())
@@ -101,13 +106,16 @@ tcga_cn["Cohort"] = "Primary TCGA PanCancer Atlas"
 su_snv["Cohort"] = "SU2C mCRPC"
 su_cn["Cohort"] = "SU2C mCRPC"
 
-m1_snvs["Cohort"] = "M1RP de novo CRPC"
-m1_cnvs["Cohort"] = "M1RP de novo CRPC"
+msk_snv["Cohort"] = 'MSK mCSPC'
+msk_cn["Cohort"] = 'MSK mCSPC'
+
+m1_snvs["Cohort"] = "M1RP de novo CSPC"
+m1_cnvs["Cohort"] = "M1RP de novo CSPC"
 
 
 # Combine cbioportal dataframes into one
-snvs = pd.concat([tcga_snv, su_snv])
-cnas =  pd.concat([tcga_cn, su_cn])
+snvs = pd.concat([tcga_snv, su_snv, msk_snv])
+cnas =  pd.concat([tcga_cn, su_cn, msk_cn])
 
 # Filter for desired genes
 snvs = snvs[snvs['Gene'].isin(genes)]
@@ -191,7 +199,7 @@ final = final.drop_duplicates()
 # fig = plt.figure(figsize=(5.5,2.75))
 # ax1 = fig.add_subplot()
 
-color_pal = {'M1RP de novo CRPC':'#03a835', 'SU2C mCRPC':'#44eb77', 'Primary TCGA PanCancer Atlas':'#a8f7c0'}
+color_pal = {'M1RP de novo CSPC':'#333399', 'SU2C mCRPC':'#009933', 'MSK mCSPC':'#66CC66', 'Primary TCGA PanCancer Atlas':'#CCCCCC'}
 
 fg = sns.catplot(data=final, kind="bar", x='Gene', y="Freq", hue="Cohort", legend=True, legend_out = False, palette=color_pal)
 
@@ -206,14 +214,14 @@ ax1 = fg.ax
 alts = final['Gene'].unique().tolist()
 
 gene_x = dict(zip(alts,np.arange(0,len(alts),1)))
-cohort_x = {'M1RP de novo CRPC':-0.265, 'SU2C mCRPC':0, 'Primary TCGA PanCancer Atlas':0.265}
+cohort_x = {'M1RP de novo CSPC':-0.3, 'Primary TCGA PanCancer Atlas':-0.1, 'MSK mCSPC':0.1, 'SU2C mCRPC':0.3}
 
 final['x'] = final.apply(lambda x: gene_x.get(x['Gene'])+cohort_x.get(x['Cohort']), axis = 1)
 
 for index, row in final.iterrows():
     ci_low, ci_upp = proportion.proportion_confint(row['Count'], row['Profiled Samples'])
     err = row['Freq'] - ci_low*100
-    ax1.errorbar(x = row['x'], y = row['Freq'], yerr = err, lw = 0.8, elinewidth = 0.8, ecolor = 'k')
+    ax1.errorbar(x = row['x'], y = row['Freq'], yerr = err, lw = 0.8, elinewidth = 0.5, ecolor = 'k')
     
 
 # =============================================================================
@@ -234,9 +242,10 @@ for ax in [ax1]:
     for side in ax.spines.keys():
         ax.spines[side].set_linewidth(0.5)
         
-plt.legend(loc=(0.06,0.8))
+plt.legend(loc=(0.06,0.74))
         
 fig.tight_layout()
 
 fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/cohort_comparison.pdf',  dpi = 600)
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/cohort_comparison.png',  dpi = 600)
 

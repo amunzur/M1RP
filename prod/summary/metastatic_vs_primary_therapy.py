@@ -312,3 +312,4 @@ fig.tight_layout()
 fig.subplots_adjust(left = 0.13, right = 0.98, top = 0.96, bottom = 0.22)
 
 fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/AlterationFrequencyByMetVsPri.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/AlterationFrequencyByMetVsPri.png')

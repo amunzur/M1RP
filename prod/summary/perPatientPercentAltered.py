@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun 23 17:11:04 2021
+Created on Tue Jun 29 09:35:07 2021
 
 @author: amurtha
 """
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import string
-import scipy.stats as stats
 
 def keepCodingMutations(df_muts):
     return df_muts[(df_muts['EFFECT'].str.contains("Missense", regex=False)) | (df_muts['EFFECT'].str.contains("Stopgain", regex=False)) | (df_muts['EFFECT'].str.contains("Frameshift", regex=False)) | (df_muts['EFFECT'].str.contains("Splice", regex=False)) | (df_muts['EFFECT'].str.contains("Non-frameshift indel", regex=False)) | (df_muts['EFFECT'] == 'EFFECT') | ((df_muts['EFFECT'] == 'Upstream')&(df_muts['GENE'] == 'TERT'))]
@@ -17,49 +15,16 @@ def keepCodingMutations(df_muts):
 # 
 # =============================================================================
 
-matrix = pd.read_csv('G:/Andy Murtha/Ghent/M1RP/prod/heterogeniety indexes/jsi_matrix_WES.tsv', sep = '\t', index_col = 'Unnamed: 0')
+altered = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/M1RP Copy Number Analysis/Whole exome (data files, threshold 2.0)/M1RP_percentAltered.tsv')
 
-tc = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
-
-tc.columns = tc.iloc[0]
-tc = tc.drop(tc.index[0])
-tc['Final tNGS_TC'] = tc['Final tNGS_TC'].astype(float)
-
-matrix = matrix.where(np.triu(np.ones(matrix.shape)).astype(bool))
-matrix = matrix.reset_index().rename(columns = {'index':'s1'})
-
-sim = matrix.melt(id_vars = 's1', var_name = 's2', value_name = 'JSI')
-
-sim = sim[~sim['JSI'].isna()]
-sim = sim[sim['s1'] != sim['s2']]
-
-sim['p1'] = sim['s1'].str.split('_').str[1]
-sim['p2'] = sim['s2'].str.split('_').str[1]
-
-sim = sim.merge(tc[['Sample ID','Final tNGS_TC']], left_on = 's1', right_on = 'Sample ID')
-sim = sim.merge(tc[['Sample ID','Final tNGS_TC']], left_on = 's2', right_on = 'Sample ID')
-
-sim = sim[(sim['Final tNGS_TC_x'] > 0.1)&(sim['Final tNGS_TC_y'] > 0.1)]
-
-# =============================================================================
-# Get boxplots for same patient vs other patient
-# =============================================================================
-
-sim = sim[sim['p1'] == sim['p2']].copy()
-
-secondary_tumors = ['M1RP_ID19_cfDNA_2017Jan13','M1RP_ID30_UCC','M1RP_ID30_RP3']
-
-sim = sim[~sim['p1'].isin(['ID9','ID20'])]
-
-sim['color'] = 'k'
-sim.loc[sim['p1'] == 'ID8', 'color'] = 'orange'
-sim.loc[(sim['s1'].isin(secondary_tumors))|(sim['s2'].isin(secondary_tumors)), 'color'] = 'blue'
+altered['Patient ID'] = altered['Sample ID'].str.split('_').str[1]
+altered = altered[~altered['Patient ID'].isin(['ID20','ID9'])]
 
 # =============================================================================
 # Import clinical data and TP53 mutation status
 # =============================================================================
 
-pts = sim['p1'].unique().tolist()
+pts = altered['Patient ID'].unique().tolist()
 
 muts = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/mutations/final melted mutations/M1RP_mutations_inclDependent.tsv', sep = '\t')
 cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy_number/final melted cna files/M1RP_cna.tsv', sep = '\t')
@@ -85,24 +50,32 @@ hm['High-risk'] = 0
 hm.loc[hm['Patient'].isin(clin['patient_id'].tolist()), 'High-risk'] = 1
 
 hm['Secondary tumor'] = 1
-hm.loc[hm['Patient'].isin(['ID8','ID30','ID19','ID15']), 'Secondary tumor'] = 0
+hm.loc[hm['Patient'].isin(['ID8','ID30','ID19']), 'Secondary tumor'] = 0
 
 # =============================================================================
 # Get order
 # =============================================================================
 
-pt_median = sim.groupby('p1').median().sort_values('JSI', ascending = False)[['JSI']]
+pt_median = altered.groupby('Patient ID').median().sort_values('Percent altered', ascending = False)[['Percent altered']]
 hm = hm.merge(pt_median, left_on = 'Patient', right_index = True)
-hm = hm.sort_values(['Secondary tumor','TP53 status','JSI'], ascending = False)
+hm = hm.sort_values(['Secondary tumor','TP53 status','Percent altered'], ascending = False)
 
 x_dict = dict(zip(hm['Patient'].tolist(), np.arange(len(hm))))
 
-sim['x'] = sim['p1'].map(x_dict)
+altered['x'] = altered['Patient ID'].map(x_dict)
 hm['x'] = hm['Patient'].map(x_dict)
 
 color_dict = {0:'grey', 1:'black'}
 hm['TP53 status'] = hm['TP53 status'].map(color_dict)
 hm['High-risk'] = hm['High-risk'].map(color_dict)
+
+secondary_tumors = ['M1RP_ID19_cfDNA_2017Jan13','M1RP_ID30_UCC','M1RP_ID30_RP3']
+
+altered = altered[~altered['Patient ID'].isin(['ID9','ID20'])]
+
+altered['color'] = 'k'
+altered.loc[altered['Patient ID'] == 'ID8', 'color'] = 'orange'
+altered.loc[altered['Sample ID'].isin(secondary_tumors), 'color'] = 'blue'
 
 # =============================================================================
 # plot scatter
@@ -110,10 +83,12 @@ hm['High-risk'] = hm['High-risk'].map(color_dict)
 
 fig,[ax1,ax2] = plt.subplots(nrows = 2, gridspec_kw = {'height_ratios':[10,1]}, sharex = True)
 
-ax1.scatter(sim['x'],sim['JSI'], alpha = 0.6, lw = 0, s = 11, color = sim['color'])
+ax1.scatter(altered['x'],altered['Percent altered'], alpha = 0.6, lw = 0, s = 11, color = altered['color'])
 
-ax1.set_ylabel('JSI')
+ax1.set_ylabel('Percent Altered')
 ax1.tick_params(bottom = False)
+
+ax1.set_ylim(ax1.get_ylim()[0], 1)
 
 # =============================================================================
 # Plot heatmap
@@ -137,33 +112,36 @@ ax2.spines['bottom'].set_visible(False)
 fig.tight_layout()
 fig.subplots_adjust(hspace = 0.01)
 
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/perPatientJSI.pdf')
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/perPatientJSI.png')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/perPatientPercent altered.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/perPatientPercent altered.png')
 
 # =============================================================================
 # 
 # =============================================================================
 
-sim_no2 = sim.copy()
-sim_no2 = sim_no2[(~sim_no2['s1'].isin(secondary_tumors))&(~sim_no2['s2'].isin(secondary_tumors))]
-sim_no2 = sim_no2[sim_no2['p1'] != 'ID8']
+import scipy.stats as stats
+
+
+sim_no2 = altered.copy()
+sim_no2 = sim_no2[~sim_no2['Sample ID'].isin(secondary_tumors)]
+sim_no2 = sim_no2[sim_no2['Patient ID'] != 'ID8']
 
 tp53_mut = sim_no2.copy()
-tp53_mut = tp53_mut[tp53_mut['p1'].isin(hm[hm['TP53 status'] == 'black']['Patient'].tolist())]
-tp53_mut = tp53_mut.groupby('p1').std()['JSI']
+tp53_mut = tp53_mut[tp53_mut['Patient ID'].isin(hm[hm['TP53 status'] == 'black']['Patient'].tolist())]
+tp53_mut = tp53_mut.groupby('Patient ID').median()['Percent altered']
 
 tp53_intact = sim_no2.copy()
-tp53_intact = tp53_intact[tp53_intact['p1'].isin(hm[hm['TP53 status'] != 'black']['Patient'].tolist())]
-tp53_intact = tp53_intact.groupby('p1').std()['JSI']
+tp53_intact = tp53_intact[tp53_intact['Patient ID'].isin(hm[hm['TP53 status'] != 'black']['Patient'].tolist())]
+tp53_intact = tp53_intact.groupby('Patient ID').median()['Percent altered']
 
-print('TP53',stats.mannwhitneyu(tp53_intact, tp53_mut, alternative = 'greater'))
+print('TP53',stats.mannwhitneyu(tp53_intact, tp53_mut, alternative = 'less'))
 
 high_risk = sim_no2.copy()
-high_risk = high_risk[high_risk['p1'].isin(hm[hm['High-risk'] == 'black']['Patient'].tolist())]
-high_risk = high_risk.groupby('p1').std()['JSI']
+high_risk = high_risk[high_risk['Patient ID'].isin(hm[hm['High-risk'] == 'black']['Patient'].tolist())]
+high_risk = high_risk.groupby('Patient ID').median()['Percent altered']
 
 low_risk = sim_no2.copy()
-low_risk = low_risk[low_risk['p1'].isin(hm[hm['High-risk'] != 'black']['Patient'].tolist())]
-low_risk = low_risk.groupby('p1').std()['JSI']
+low_risk = low_risk[low_risk['Patient ID'].isin(hm[hm['High-risk'] != 'black']['Patient'].tolist())]
+low_risk = low_risk.groupby('Patient ID').median()['Percent altered']
 
-print(stats.mannwhitneyu(high_risk, low_risk))
+print(stats.mannwhitneyu(high_risk, low_risk, alternative = 'greater'))

@@ -321,4 +321,4 @@ fig.tight_layout()
 fig.subplots_adjust(left = 0.2, right = 0.8, top = 0.92, bottom = 0.01, hspace = 0.01)
 
 fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/summary/pt_sample_summary_fig_compressed.pdf')
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/summary/pt_sample_summary_fig_compressed.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/pt_sample_summary_fig_compressed.pdf')

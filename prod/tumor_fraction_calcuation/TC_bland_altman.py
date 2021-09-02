@@ -143,5 +143,5 @@ ax3.set_xlabel('Mutation TC')
 
 plt.tight_layout()
 
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Work from 2021/summary/TC_bland_altman.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/TC_bland_altman.pdf')
 fig.savefig('G:/Andy Murtha/Ghent/M1RP/prod/tumor_fraction_calcuation/TC_bland_altman.pdf')

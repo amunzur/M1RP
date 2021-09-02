@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+Created on Thu Jul 22 11:01:15 2021
+
+@author: amurtha
+"""
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Mar 22 16:56:24 2021
 
 @author: amurtha
@@ -58,6 +64,8 @@ pts = ['ID%i' % (i+1) for i in np.arange(43)]
 
 # for pt in pts:
 for pt in ['ID33']:
+    # if pt == 'ID33':
+    #     continue;
     pt_tc = tc[tc['Patient ID'] == pt].copy()
     pt_muts = muts[muts['Patient ID'] == pt].copy()
     pt_cn = cn[cn['Patient ID'] == pt].copy()
@@ -82,7 +90,7 @@ for pt in ['ID33']:
     
     
     pt_bet = pt_bet.set_index(index_cols)
-    pt_bet = pt_bet[pt_bet.apply(lambda r: (r >= 8).all(), axis=1)]
+    # pt_bet = pt_bet[pt_bet.apply(lambda r: (r >= 8).all(), axis=1)]
     
     pt_muts = pt_muts.set_index(index_cols)
     pt_muts = pt_muts[pt_muts.index.isin(pt_bet.index)]
@@ -174,4 +182,4 @@ for pt in ['ID33']:
     
     
     
-    fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Oncoprints/Patient oncoprints/%s.pdf' % pt)
+    fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Oncoprints/Patient oncoprints/unfiltered/%s.pdf' % pt)

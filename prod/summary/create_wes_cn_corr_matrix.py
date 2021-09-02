@@ -36,6 +36,9 @@ def get_corr(s1, s2, cn, tc):
     s1_dd = 2*(math.log2(2-2*s1_tc)-1)
     s2_dd = 2*(math.log2(2-2*s2_tc)-1)
     
+    if (len(segs[segs[s1] < s1_dd]) > 0 or len(segs[segs[s2] < s2_dd]) > 0) and s1.split('_')[1] == s2.split('_')[1]:
+        s1 = s1
+    
     segs = segs[(segs[s1] > s1_dd) & (segs[s2] > s2_dd)].copy()
     
     segs = segs.set_index(['CHR','START','END'])
@@ -94,10 +97,10 @@ matrix = pd.DataFrame(index = samples, columns = samples)
 def func(s1, s2):
     return get_corr(s1, s2, cn, tc)
 
-# results = [func(s1,s2) for (s1,s2) in it.combinations_with_replacement(samples, 2)]
+results = [func(s1,s2) for (s1,s2) in it.combinations_with_replacement(samples, 2)]
 
 n_cores = mp.cpu_count() 
-results = Parallel(n_jobs=n_cores)(delayed(func)(s1,s2) for (s1,s2) in it.combinations_with_replacement(samples, 2))
+# results = Parallel(n_jobs=n_cores)(delayed(func)(s1,s2) for (s1,s2) in it.combinations_with_replacement(samples, 2))
 
 for (s1,s2),r in zip(it.combinations_with_replacement(samples, 2), results):
     matrix.at[s1,s2] = r

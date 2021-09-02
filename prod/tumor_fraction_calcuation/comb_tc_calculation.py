@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+Created on Fri Aug 27 11:05:31 2021
+
+@author: amurtha
+"""
+# -*- coding: utf-8 -*-
+"""
 Created on Tue May 19 13:02:16 2020
 
 @author: amurtha
@@ -11,6 +17,111 @@ import scipy.stats as stats
 import numpy as np
 import math
 import sys
+
+min_reads = 30
+lr_max = 0.3
+min_truncal = 0.75
+
+# =============================================================================
+# 
+# =============================================================================
+
+muts = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/combined_primary/mutations/melted.tsv', sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/combined_primary/copy_num/gene_cna.ffpe.tsv', sep = '\t')
+
+# =============================================================================
+# 
+# =============================================================================
+# cn = cn.append(cn_tmp, ignore_index = True)
+
+muts.loc[muts['GENE'] == 'BIVM-ERCC5;ERCC5', 'GENE'] = 'ERCC5'
+
+# =============================================================================
+# Merge log_ratio onto mutations
+# =============================================================================
+
+muts = muts.merge(cn[['Sample ID','GENE','Log_ratio']], on = ['Sample ID','GENE'], how = 'left')
+
+# =============================================================================
+# Flag mutation with < min reads. Depth flag = False if < min_reads
+# =============================================================================
+
+muts['Depth_flag'] = True
+muts.loc[muts['Read_depth'] < min_reads, 'Depth_flag'] = False
+
+# =============================================================================
+# Flag mutations on amplified genes (log_ratio > lr_max). Exclude mutations on 
+# genes in cna_exclusion
+# Lr_flag is false if mutation is on an included amplified gene. Lr_flag also 
+# gets false if mutation is intergenic or off target
+# =============================================================================
+
+muts['Lr_flag'] = False
+muts.loc[(muts['Log_ratio']<=lr_max)&(muts['GENE'] != 'FOXA1'),'Lr_flag']=True
+
+# =============================================================================
+# Flag mutation on allosomes. True if on autosome. 
+# =============================================================================
+
+muts['Allosome_flag'] = True
+muts.loc[muts['CHROM'].isin(['chrX','chrY']), 'Allosome_flag'] = False
+
+# =============================================================================
+# Calculate muts for each mutation
+# =============================================================================
+
+muts['mut_TC'] = 2/(1+1/muts['Allele_frequency'])
+muts.loc[muts['Allosome_flag'] == False, 'mut_TC'] = muts['Allele_frequency']
+
+# =============================================================================
+# Sort mutations based on sample id, flags, tc. Merge in samples with no mutations
+# =============================================================================
+
+muts = muts.sort_values(['Sample ID','Lr_flag','Allosome_flag','Depth_flag','mut_TC'], ascending = [True,False,False,False,False])
+
+muts = muts[['Cohort', 'Patient ID', 'Sample ID','mut_TC', 'CHROM', 'POSITION', 'REF', 'ALT','GENE', 'EFFECT', 'Allele_frequency', 'Read_depth', 'NOTES', 'Log_ratio', 'Allosome_flag','Depth_flag','Lr_flag']]
+
+# =============================================================================
+# Label first mutation
+# =============================================================================
+
+muts['TC_call'] = False
+
+unique_samples = muts['Sample ID'].drop_duplicates().tolist()
+sample_id_dict = dict(zip(unique_samples, [0]*len(unique_samples)))
+
+for index, row in muts.iterrows():
+    if sample_id_dict.get(row['Sample ID']) == 0:
+        muts.at[index, 'TC_call'] = True
+        sample_id_dict[row['Sample ID']] = 1
+
+# =============================================================================
+# Save to excel
+# =============================================================================
+
+muts.to_excel('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/combined_primary/tumor_fraction/combined_tc_allMuts.xlsx', index = None)
+
+# =============================================================================
+# Keep only top mutation per patient. All flags must be true
+# =============================================================================
+
+muts = muts[muts['Lr_flag'] != False]
+muts = muts[muts['Depth_flag'] != False]
+muts = muts.drop_duplicates('Sample ID')
+
+muts['mut_TC'] = muts['mut_TC'].fillna(0)
+
+muts = muts[['Cohort', 'Patient ID', 'Sample ID', 'mut_TC', 'CHROM', 'POSITION', 'GENE', 'EFFECT', 'Allele_frequency', 'Read_depth','Log_ratio']]
+muts.columns = ['Cohort','Patient ID','Sample ID','mut_TC','Chromosome','Position','Gene','Effect','Variant allele frequency','Read depth at variant position','Gene Log Ratio']
+
+muts = muts.sort_values('Sample ID')
+
+samples = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/combined_primary/copy_num/gene_cna.ffpe.tsv', sep = '\t')['Sample ID'].unique().tolist()
+
+final_tc = pd.DataFrame({'Sample ID':samples})
+
+final_tc = final_tc.merge(muts, on = 'Sample ID', how = 'left')
+
 
 # =============================================================================
 # Constants
@@ -39,7 +150,7 @@ def label_genes(snp, gene):
     for index, row in gene.iterrows():
         start = row['START']-1000
         end = row['END']+1000
-        chrom = row['CHROMOSOME']
+        chrom = row['CHROM']
         snp.loc[(snp['CHROM']==chrom)&(snp['POSITION']<=end)&(snp['POSITION']>=start), 'GENE'] = row['GENE']
     return snp;
 
@@ -56,8 +167,8 @@ def create_depth_std(gl, window_size):
 # Import SNPs
 # =============================================================================
 
-snp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/hetz_snps/ghent_%s_hetz_snps.vcf' % cohort, sep = '\t')
-cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy_number/final melted cna files/M1RP_cna.tsv', sep = '\t')
+snp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/combined_primary/hetz_snps/hetz_snps.vcf', sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/combined_primary/copy_num/gene_cna.ffpe.tsv', sep = '\t')
 col = 'Copy_num'
 cn_call = -1
 
@@ -72,10 +183,10 @@ snp['Read depth'] = snp['value'].str.split(':').str[1].astype(float)
 snp['Mutant reads'] = snp['value'].str.split(':').str[0].astype(float)
 snp['VAF'] = snp['Mutant reads'] / snp['Read depth']
 if cohort != 'abienza':
-    snp['Patient ID'] = snp['Sample ID'].str.split('_').str[1]
-    snp['Sample type'] = snp['Sample ID'].str.split('_').str[2].str.replace('\d+', '', regex = True)
+    snp['Patient ID'] = snp['Sample ID'].str.replace('\.', '_',regex = True).str.split('_').str[1]
+    snp['Sample type'] = snp['Sample ID'].str.replace('\.', '_',regex = True).str.split('_').str[2].str.replace('\d+', '', regex = True)
 else:
-    snp['Patient ID'] = snp['Sample ID'].str.split('-').str[0]+'_'+snp['Sample ID'].str.split('-').str[1]
+    snp['Patient ID'] = snp['Sample ID'].str.replace('\.', '_',regex = True).str.split('-').str[0]+'_'+snp['Sample ID'].str.split('-').str[1]
     snp['Sample type'] = 'cfDNA'
     snp.loc[snp['Sample ID'].str.contains('WBC'), 'Sample type'] = 'gDNA'
 
@@ -115,7 +226,6 @@ gl_grouped = gl.copy()
 gl = gl[['CHROM','POSITION','REF','ALT','Patient ID','Called']]
 snp = snp.merge(gl, on = ['CHROM','POSITION','REF','ALT','Patient ID'])
 
-
 # =============================================================================
 # Keep snps with min reads > x
 # =============================================================================
@@ -126,7 +236,7 @@ snp = snp[snp['Read depth'] >= min_reads]
 # Merge Gene onto position
 # =============================================================================
 
-cn = cn[['Sample ID','GENE','CHROMOSOME','START','END','Log_ratio',col]]
+cn = cn[['Sample ID','GENE','CHROM','START','END','Log_ratio',col]]
 snp = label_genes(snp, cn)
 
 # =============================================================================
@@ -212,7 +322,7 @@ snp['Copy neutral gene count'] = snp['Gene count'] - snp['Num LOH']
 # Merge chromosome back into dataframe
 # =============================================================================
 
-cn = cn[['GENE','CHROMOSOME']].rename(columns = {'CHROMOSOME':'CHROM'})
+cn = cn[['GENE','CHROM']].rename(columns = {'CHROM':'CHROM'})
 snp = snp.merge(cn[['GENE','CHROM']], on  = 'GENE')
 
 # =============================================================================
@@ -258,14 +368,20 @@ tc.columns = ['Sample ID','snp_TC','median LOH VAF','Gene count','LOH gene count
 # Merge right onto all samples and fill snp_TC as 0
 # =============================================================================
 
-samples = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
-samples.columns = samples.iloc[0]
-samples = samples.drop(samples.index[0])
+final_tc = final_tc.merge(tc, on = 'Sample ID', how = 'left')
+final_tc['snp_TC'] = final_tc['snp_TC'].fillna(0)
+final_tc['mut_TC'] = final_tc['mut_TC'].fillna(0)
 
-samples = samples[samples['Cohort'] == cohort]
-samples = samples[['Cohort','Patient ID','Sample ID']]
+fig,ax = plt.subplots()
 
-tc = samples.merge(tc, on = 'Sample ID', how = 'left')
-tc['snp_TC'] = tc['snp_TC'].fillna(0)
+ax.scatter(final_tc['mut_TC'],final_tc['snp_TC'], lw = 0, s = 12)
+ax.plot([0,1],[0,1])
+ax.set_xlabel('mut TC')
+ax.set_ylabel('SNP TC')
 
-tc.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/tumor_fraction/%s_snp_tc.tsv' % cohort, sep = '\t', index = None)
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/combined_primary/tumor_fraction/TC_scatter.png')
+
+final_tc['Final tNGS_TC'] = final_tc['mut_TC']
+final_tc.loc[final_tc['Final tNGS_TC'] == 0, 'Final tNGS_TC'] = final_tc['snp_TC']
+
+final_tc.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/combined_primary/tumor_fraction/tumor_content.tsv', sep = '\t', index = None)

@@ -27,8 +27,7 @@ else:
 called = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/mutations/final melted mutations/M1RP_mutations.tsv', sep = '\t')
 muts = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/mutations/final melted mutations/%s_mutations_inclDependent.tsv' % cohort, sep = '\t')
 tc = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
-cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy_number/final melted cna files/%s_FFPE_cna.tsv' % cohort, sep = '\t')
-cn_tmp = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy_number/final melted cna files/%s_cfDNA_cna.tsv' % cohort, sep = '\t')
+cn = pd.read_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/copy_number/final melted cna files/%s_cna.tsv' % cohort, sep = '\t')
 samples = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
 
 tc.columns = tc.iloc[0]
@@ -38,8 +37,7 @@ muts['Cohort'] = cohort
 
 tc = tc[tc['Cohort'] == cohort]
 
-cn = cn.append(cn_tmp, ignore_index = True)
-del cn_tmp
+# cn = cn.append(cn_tmp, ignore_index = True)
 
 muts.loc[muts['GENE'] == 'BIVM-ERCC5;ERCC5', 'GENE'] = 'ERCC5'
 called.loc[called['GENE'] == 'BIVM-ERCC5;ERCC5', 'GENE'] = 'ERCC5'
@@ -65,7 +63,7 @@ muts.loc[muts['Read_depth'] < min_reads, 'Depth_flag'] = False
 # =============================================================================
 
 muts['Lr_flag'] = False
-muts.loc[muts['Log_ratio']<=lr_max,'Lr_flag']=True
+muts.loc[(muts['Log_ratio']<=lr_max)&(muts['GENE'] != 'FOXA1'),'Lr_flag']=True
 
 # =============================================================================
 # Flag mutation on allosomes. True if on autosome. 
@@ -157,4 +155,4 @@ muts.columns = ['Cohort','Patient ID','Sample ID','mut_TC','Chromosome','Positio
 
 muts = muts.sort_values('Sample ID')
 
-muts.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/tumor_fraction/%s_mut_tc.tsv' % cohort, sep = '\t', index = None)
+muts.to_csv('C:/Users/amurtha/Dropbox/Ghent M1 2019/Mar2021_datafreeze/tumor_fraction/comb_mut_tc.tsv' % cohort, sep = '\t', index = None)

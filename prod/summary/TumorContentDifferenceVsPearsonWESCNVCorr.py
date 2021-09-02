@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jun 22 10:21:56 2021
+Created on Thu Jun 24 16:43:50 2021
 
 @author: amurtha
 """
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -66,37 +65,37 @@ sim = sim[(sim['Final tNGS_TC_x'] > 0.2)&(sim['Final tNGS_TC_y'] > 0.2)]
 sim = sim[sim['p1'] == sim['p2']]
 sim = sim[(~sim['p_corr'].isna())&(~sim['JSI'].isna())]
 
-secondary_tumors = ['M1RP_ID19_cfDNA_2017Jan13','M1RP_ID30_UCC','M1RP_ID30_RP3']
+secondary_tumors = ['M1RP_ID19_cfDNA_2017Jan13','M1RP_ID30_UCC']
 
 sim = sim[~sim['p1'].isin(['ID8','ID9','ID20'])]
 sim = sim[(~sim['s1'].isin(secondary_tumors))&(~sim['s2'].isin(secondary_tumors))]
 
 # =============================================================================
-# Plot scatter
+# TC diff
 # =============================================================================
 
-fig,ax = plt.subplots(figsize = (2,2))
+sim['TC_diff'] = (sim['Final tNGS_TC_x'] - sim['Final tNGS_TC_y']).abs()
 
-ax.scatter(sim['p_corr'], sim['JSI'], lw = 0, c = 'k', s = 8)
-lin = stats.linregress(sim['p_corr'],sim['JSI'])
+fig,ax = plt.subplots(figsize = (3,3))
+
+ax.scatter(sim['TC_diff'], sim['p_corr'], s = 4, lw = 0, c = 'k', zorder = 100)
+
+ax.set_ylabel('Pearson correlation')
+ax.set_xlabel('Tumor content difference between samples')
 
 xlim = ax.get_xlim()
 ylim = ax.get_ylim()
 
+lin = stats.linregress(sim['TC_diff'],sim['p_corr'])
+
 b = lin[1]
 m = lin[0]
 
-ax.plot([-10,10], [b+m*-10, b+m*10], ls = 'dashed', lw = 0.8, color = 'k', marker = None)
-ax.text(0.1, 1.0, '$r=%0.2f$' % (lin[2]), fontsize = 6)
-
+ax.plot([-10,1000], [b+m*-10, b+m*1000], ls = 'dashed', lw = 0.8, color = 'k', marker = None)
+ax.text(xlim[1], 1.0, '$r=%0.2f$' % (lin[2]), fontsize = 6, ha = 'right')
 ax.set_xlim(xlim)
 ax.set_ylim(ylim)
 
-ax.set_xlabel('CNV correlation', fontsize = 6)
-ax.set_ylabel('JSI', fontsize = 6)
-ax.tick_params(labelsize = 6)
-
-plt.tight_layout()
-
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/WES_jsi_cnvCorr_scatter.pdf')
-fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/WES_jsi_cnvCorr_scatter.png')
+fig.tight_layout()
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/TCdiff_CSVcorr_scatter.pdf')
+fig.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/TCdiff_CSVcorr_scatter.png')

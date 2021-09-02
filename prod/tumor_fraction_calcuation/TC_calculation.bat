@@ -8,9 +8,8 @@ echo "Update mutations"
 python "C:\Users\amurtha\Dropbox\Ghent M1 2019\Mar2021_datafreeze\mutations\betastasis\melt_betastasis.py" %cohort%
 echo "Update independent mutation"
 python "C:\Users\amurtha\Dropbox\Ghent M1 2019\Mar2021_datafreeze\mutations\betastasis\melt_betastasis_inclDependent.py" %cohort%
-echo "Update CNA"
-python "C:\Users\amurtha\Dropbox\Ghent M1 2019\Mar2021_datafreeze\copy_number\melt_cn.py" 
-
+echo "Update SNPs"
+python "G:\Andy Murtha\Ghent\M1RP\prod\SNP_analysis\melt_snps.py"
 echo "SNP TC calls"
 python "G:\Andy Murtha\Ghent\M1RP\prod\SNP_analysis\snp_tc_calculator.py" %cohort% %nascent%
 

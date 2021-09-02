@@ -70,6 +70,7 @@ ax.tick_params(labelsize = 6)
 fig.tight_layout()
 
 plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/wes_cnv_pCorr_boxplots_samePt_diffPt.pdf')
+plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/wes_cnv_pCorr_boxplots_samePt_diffPt.png')
 
 
 # =============================================================================
@@ -124,3 +125,4 @@ ax.tick_params(labelsize = 6)
 plt.tight_layout()
 
 plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/wes_cnv_pCorr_boxplots_bySite.pdf')
+plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/summary/wes_cnv_pCorr_boxplots_bySite.png')
