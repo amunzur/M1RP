@@ -15,10 +15,19 @@ from matplotlib.patches import Patch
 # TC
 # =============================================================================
 
-tc = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
+tc = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=1810876385')
 
-tc.columns = tc.iloc[0]
-tc = tc.drop(tc.index[0])
+tc_full = pd.read_csv('https://docs.google.com/spreadsheets/d/13A4y3NwKhDevY9UF_hA00RWZ_5RMFBVct2RftkSo8lY/export?format=csv&gid=963468022')
+
+tc_full.columns = tc_full.iloc[0]
+tc_full = tc_full.drop(tc_full.index[0])
+tc_full['Final tNGS_TC'] = tc_full['Final tNGS_TC'].astype(float)
+
+tc = tc.merge(tc_full[['Sample ID','mut_TC','snp_TC', 'Cohort']], on = 'Sample ID', how = 'left')
+
+
+# tc.columns = tc.iloc[0]
+# tc = tc.drop(tc.index[0])
 tc['Final tNGS_TC'] = tc['Final tNGS_TC'].astype(float)
 tc['mut_TC'] = tc['mut_TC'].astype(float)
 tc['snp_TC'] = tc['snp_TC'].astype(float)
@@ -119,9 +128,9 @@ plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Tumor content/TC_byS
 # =============================================================================
 
 tc['TC cat'] = 0
-tc.loc[(tc['Final tNGS_TC']>0)&(tc['Final tNGS_TC']<0.2), 'TC cat'] = 1
-tc.loc[(tc['Final tNGS_TC']>=0.2)&(tc['Final tNGS_TC']<0.4), 'TC cat'] = 2
-tc.loc[(tc['Final tNGS_TC']>=0.4), 'TC cat'] = 3
+tc.loc[(tc['Final tNGS_TC']>0)&(tc['Final tNGS_TC']<=0.2), 'TC cat'] = 1
+tc.loc[(tc['Final tNGS_TC']>0.2)&(tc['Final tNGS_TC']<=0.4), 'TC cat'] = 2
+tc.loc[(tc['Final tNGS_TC']>0.4), 'TC cat'] = 3
 
 tc = tc.sort_values('TC cat')
 
@@ -181,7 +190,8 @@ samples = samples.drop(samples.index[0])
 
 samples = samples[['Sample ID','GGG']]
 
-tc_ggg = tc.merge(samples, on = 'Sample ID', how = 'left')
+# tc_ggg = tc.merge(samples, on = 'Sample ID', how = 'left')
+tc_ggg = tc.copy()
 tc_ggg = tc_ggg[tc_ggg['Sample cat'].isin(['PB','RP'])]
 
 tc_ggg = tc_ggg[(~tc_ggg['GGG'].isna())&(tc_ggg['GGG'] != '?')]
@@ -217,9 +227,9 @@ plt.savefig('C:/Users/amurtha/Dropbox/Ghent M1 2019/Figures/Tumor content/TC_byG
 # =============================================================================
 
 tc_ggg['TC cat'] = 0
-tc_ggg.loc[(tc_ggg['Final tNGS_TC']>0)&(tc_ggg['Final tNGS_TC']<0.2), 'TC cat'] = 1
-tc_ggg.loc[(tc_ggg['Final tNGS_TC']>=0.2)&(tc_ggg['Final tNGS_TC']<0.4), 'TC cat'] = 2
-tc_ggg.loc[(tc_ggg['Final tNGS_TC']>=0.4), 'TC cat'] = 3
+tc_ggg.loc[(tc_ggg['Final tNGS_TC']>0)&(tc_ggg['Final tNGS_TC']<=0.2), 'TC cat'] = 1
+tc_ggg.loc[(tc_ggg['Final tNGS_TC']>0.2)&(tc_ggg['Final tNGS_TC']<=0.4), 'TC cat'] = 2
+tc_ggg.loc[(tc_ggg['Final tNGS_TC']>0.4), 'TC cat'] = 3
 
 tc_ggg = tc_ggg.sort_values('TC cat')
 
@@ -262,7 +272,7 @@ ax.tick_params(labelsize = 6)
 handles = [Patch(color = c) for c in ['grey','#fee0d2','#fc9272','#de2d26']]
 labels = ['TC negative','0 - 20%','20 - 40%','> 40%']
 
-fig.legend(handles, labels, loc = 'upper right', fontsize = 6, handlelength = 0.8)
+# fig.legend(handles, labels, loc = 'upper right', fontsize = 6, handlelength = 0.8)
 
 fig.tight_layout()
 fig.subplots_adjust(right = 0.75)
@@ -281,17 +291,19 @@ samples = samples.drop(samples.index[0])
 
 samples = samples[['Sample ID','PathTC']]
 
-tc_path = tc.merge(samples, on = 'Sample ID', how = 'left')
+# tc_path = tc.merge(samples, on = 'Sample ID', how = 'left')
+tc_path = tc.copy()
 tc_path = tc_path[tc_path['Sample cat'].isin(['PB','RP'])]
 tc_path = tc_path[~tc_path['PathTC'].isna()]
 
-tc_path['pathTC_int'] = tc_path['PathTC'].str.split('%').str[0].astype(int)
-tc_path.loc[tc_path['pathTC_int'] <= 60, 'PathTC'] = '60% or less'
+tc_path['pathTC_int'] = tc_path['PathTC'].copy()
+tc_path['PathTC'] = (tc_path['PathTC']*100).astype(str)
+tc_path.loc[tc_path['pathTC_int'] <= 0.60, 'PathTC'] = '60% or less'
 
 tc_path['TC cat'] = 0
-tc_path.loc[(tc_path['Final tNGS_TC']>0)&(tc_path['Final tNGS_TC']<0.2), 'TC cat'] = 1
-tc_path.loc[(tc_path['Final tNGS_TC']>=0.2)&(tc_path['Final tNGS_TC']<0.4), 'TC cat'] = 2
-tc_path.loc[(tc_path['Final tNGS_TC']>=0.4), 'TC cat'] = 3
+tc_path.loc[(tc_path['Final tNGS_TC']>0)&(tc_path['Final tNGS_TC']<=0.2), 'TC cat'] = 1
+tc_path.loc[(tc_path['Final tNGS_TC']>0.2)&(tc_path['Final tNGS_TC']<=0.4), 'TC cat'] = 2
+tc_path.loc[(tc_path['Final tNGS_TC']>0.4), 'TC cat'] = 3
 
 tc_path = tc_path.sort_values('TC cat')
 
